@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<title>Idrettshall Soundboard</title>
+<style>
+  :root {
+    --bg: #07090d;
+    --bg2: #0c1016;
+    --panel: #121822;
+    --panel2: #18202c;
+    --line: #253041;
+    --text: #f3f6fa;
+    --muted: #93a1b3;
+    --green: #22c55e;
+    --green-d: #15803d;
+    --red: #ef4444;
+    --red-d: #991b1b;
+    --amber: #f59e0b;
+    --accent: #facc15;
+    --blue: #38bdf8;
+    --radius: 16px;
+    --gutter: 16px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: radial-gradient(1200px 600px at 50% -200px, #14213a 0%, var(--bg) 60%) fixed, var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 12px var(--gutter) 40px; }
+
+  /* ---------- Header ---------- */
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    justify-content: space-between; padding: 6px 0 14px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand .logo {
+    width: 42px; height: 42px; border-radius: 12px; flex: none;
+    background: linear-gradient(135deg, var(--accent), #f97316);
+    display: grid; place-items: center; font-size: 24px; color: #111;
+  }
+  .brand h1 { font-size: clamp(1.15rem, 3.2vw, 1.6rem); margin: 0; letter-spacing: .02em; text-transform: uppercase; font-weight: 900; }
+  .brand small { display: block; color: var(--muted); font-size: .8rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    font-size: .85rem; font-weight: 600; white-space: nowrap;
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 10px var(--red); flex: none; }
+  .dot.on { background: var(--green); box-shadow: 0 0 12px var(--green); }
+  .dot.wait { background: var(--amber); box-shadow: 0 0 10px var(--amber); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  .pill.unlock { background: var(--amber); color: #111; border-color: var(--amber); cursor: pointer; }
+
+  /* ---------- Notices ---------- */
+  #notices { display: grid; gap: 8px; margin-bottom: 12px; }
+  .notice {
+    display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px;
+    border-radius: 12px; border: 1px solid; font-weight: 600; font-size: .95rem;
+    animation: slideIn .2s ease-out;
+  }
+  .notice.error { background: #2a0f12; border-color: var(--red); color: #ffd7d7; }
+  .notice.warn  { background: #2a1e07; border-color: var(--amber); color: #ffe9bf; }
+  .notice.info  { background: #0b2030; border-color: var(--blue); color: #d4f0ff; }
+  .notice.success { background: #0b2617; border-color: var(--green); color: #d2ffe2; }
+  .notice .ic { font-size: 1.15rem; line-height: 1.2; }
+  .notice .msg { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .notice button { background: none; border: 0; font-size: 1.2rem; line-height: 1; padding: 0 4px; opacity: .8; }
+  @keyframes slideIn { from { transform: translateY(-6px); opacity: 0; } }
+
+  /* ---------- Panels ---------- */
+  details.panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    margin-bottom: 14px; overflow: hidden;
+  }
+  details.panel > summary {
+    list-style: none; cursor: pointer; padding: 14px 18px; font-weight: 800;
+    display: flex; align-items: center; gap: 10px; font-size: 1.05rem; user-select: none;
+  }
+  details.panel > summary::-webkit-details-marker { display: none; }
+  details.panel > summary::after { content: "▾"; margin-left: auto; transition: transform .2s; color: var(--muted); }
+  details.panel:not([open]) > summary::after { transform: rotate(-90deg); }
+  details.panel > summary .sum-extra { color: var(--muted); font-weight: 600; font-size: .85rem; }
+  .panel-body { padding: 4px 18px 18px; border-top: 1px solid var(--line); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+  h3 { font-size: .95rem; margin: 18px 0 8px; }
+
+  label.lbl { display: block; font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; }
+  input[type=text], input[type=url], input[type=number], input:not([type]) {
+    width: 100%; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--line);
+    border-radius: 10px; font-size: 1rem; min-height: 48px;
+  }
+  input:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row > .grow { flex: 1 1 220px; min-width: 0; }
+  .uri-box {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch;
+  }
+  .uri-box code {
+    flex: 1 1 260px; min-width: 0; display: block; padding: 12px 14px; background: #000; border: 1px dashed var(--accent);
+    border-radius: 10px; color: var(--accent); font-size: 1rem; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel2); font-weight: 700; font-size: .98rem; transition: transform .06s, filter .15s, background .15s;
+  }
+  .btn:hover { filter: brightness(1.15); }
+  .btn:active { transform: scale(.97); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
+  .btn.primary { background: var(--green); border-color: var(--green); color: #04140a; }
+  .btn.spotify { background: #1db954; border-color: #1db954; color: #04140a; }
+  .btn.danger { background: transparent; border-color: var(--red); color: #ffb4b4; }
+  .btn.ghost { background: transparent; }
+  .btn.sm { min-height: 40px; padding: 6px 12px; font-size: .88rem; border-radius: 10px; }
+  .muted { color: var(--muted); }
+  .small { font-size: .88rem; }
+  ol.steps { margin: 8px 0 0; padding-left: 22px; color: var(--muted); font-size: .92rem; }
+  ol.steps li { margin: 4px 0; }
+  ol.steps b { color: var(--text); }
+  a { color: var(--blue); }
+  .warnbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #2a1e07; border: 1px solid var(--amber); color: #ffe9bf; font-size: .9rem; font-weight: 600; }
+  .okbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #0b2617; border: 1px solid var(--green); color: #d2ffe2; font-size: .92rem; font-weight: 600; }
+
+  /* ---------- Main control grid ---------- */
+  .grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); margin-bottom: 14px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  .controls { display: flex; flex-direction: column; gap: 14px; }
+
+  #goalBtn {
+    position: relative; width: 100%; min-height: clamp(180px, 34vh, 320px);
+    border: 0; border-radius: 24px; color: #031407;
+    background: radial-gradient(circle at 50% 30%, #4ade80, var(--green) 45%, var(--green-d));
+    box-shadow: 0 10px 0 #0c5a2a, 0 18px 40px rgba(34,197,94,.35), inset 0 2px 0 rgba(255,255,255,.35);
+    font-size: clamp(3.2rem, 11vw, 7.5rem); font-weight: 900; letter-spacing: .04em;
+    text-shadow: 0 2px 0 rgba(255,255,255,.35);
+    transition: transform .06s, box-shadow .06s, filter .2s;
+    overflow: hidden;
+  }
+  #goalBtn .sub { display: block; font-size: clamp(.8rem, 1.6vw, 1rem); letter-spacing: .14em; font-weight: 800; opacity: .7; text-shadow: none; }
+  #goalBtn:active, #goalBtn.pressed { transform: translateY(8px); box-shadow: 0 2px 0 #0c5a2a, 0 8px 20px rgba(34,197,94,.3), inset 0 2px 0 rgba(255,255,255,.3); }
+  #goalBtn.busy { filter: saturate(.6) brightness(.9); }
+  #goalBtn.flash::after {
+    content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash .6s ease-out;
+  }
+  @keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+
+  .stop-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  #fadeBtn {
+    width: 100%; min-height: 110px; border: 0; border-radius: 20px; color: #fff;
+    background: radial-gradient(circle at 50% 30%, #f87171, var(--red) 50%, var(--red-d));
+    box-shadow: 0 8px 0 #6b1111, 0 14px 30px rgba(239,68,68,.3), inset 0 2px 0 rgba(255,255,255,.3);
+    font-size: clamp(1.6rem, 4.6vw, 2.6rem); font-weight: 900; letter-spacing: .03em;
+    transition: transform .06s, box-shadow .06s;
+  }
+  #fadeBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #6b1111; }
+  #fadeBtn.fading { animation: pulse .5s infinite alternate; }
+  @keyframes pulse { to { filter: brightness(1.35); } }
+  #fadeBtn .sub { display: block; font-size: .8rem; letter-spacing: .14em; opacity: .8; font-weight: 800; }
+  .stop2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: stretch; }
+  @media (max-width: 520px) { .stop2 { grid-template-columns: minmax(0, 1fr); } }
+  #killBtn {
+    min-height: 64px; border-radius: 14px; border: 2px solid var(--red); background: #1d0b0d; color: #ffc9c9;
+    font-weight: 900; font-size: 1.02rem;
+  }
+  #killBtn:active { transform: scale(.97); background: var(--red-d); }
+  .vol { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .vol .vtop { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .vol .vtop b { color: var(--text); font-size: 1rem; }
+  input[type=range] { width: 100%; height: 36px; accent-color: var(--accent); }
+
+  /* ---------- Now playing ---------- */
+  .np { display: flex; gap: 16px; align-items: center; }
+  .np .art {
+    width: 96px; height: 96px; border-radius: 12px; background: var(--bg2) center/cover no-repeat; flex: none;
+    border: 1px solid var(--line); display: grid; place-items: center; font-size: 40px; color: var(--muted);
+  }
+  .np .meta { min-width: 0; flex: 1; }
+  .np .title { font-size: clamp(1.25rem, 3vw, 1.7rem); font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
+  .np .artist { color: var(--muted); font-weight: 600; margin-top: 2px; overflow-wrap: anywhere; }
+  .np .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line); text-transform: uppercase; letter-spacing: .05em; }
+  .tag.goal { background: var(--green); color: #04140a; border-color: var(--green); }
+  .tag.test { background: var(--blue); color: #021018; border-color: var(--blue); }
+  .tag.drop { background: #2b2408; color: var(--accent); border-color: #5c4d0f; }
+  .tag.paused { background: #2a1e07; color: var(--amber); border-color: #5c430f; }
+  .prog { margin-top: 14px; height: 8px; background: var(--bg2); border-radius: 99px; overflow: hidden; position: relative; }
+  .prog > i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--accent), #f97316); border-radius: 99px; }
+  .prog > b { position: absolute; top: -3px; bottom: -3px; width: 3px; background: #fff; border-radius: 2px; opacity: .8; }
+  .times { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  /* ---------- Round ---------- */
+  .round-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .count { font-size: 1.35rem; font-weight: 900; }
+  .count span { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 8px 12px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
+    font-weight: 700; font-size: .9rem; max-width: 100%; overflow-wrap: anywhere;
+  }
+  .chip small { color: var(--muted); font-weight: 600; }
+  .chip.played { opacity: .38; text-decoration: line-through; }
+  .chip.bad { border-color: var(--amber); }
+  .chip.current { border-color: var(--green); box-shadow: 0 0 0 2px rgba(34,197,94,.35); opacity: 1; text-decoration: none; }
+
+  /* ---------- Track admin ---------- */
+  .form-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 12px; }
+  .f-link { grid-column: span 12; }
+  .f-title { grid-column: span 5; }
+  .f-artist { grid-column: span 4; }
+  .f-drop { grid-column: span 3; }
+  @media (max-width: 760px) { .f-title, .f-artist { grid-column: span 12; } .f-drop { grid-column: span 12; } }
+  .drop-wrap { display: flex; gap: 8px; }
+  .drop-wrap input { flex: 1; min-width: 0; }
+  .hint { font-size: .82rem; color: var(--muted); margin-top: 6px; min-height: 1.1em; }
+  .hint.ok { color: #86efac; }
+  .hint.bad { color: #fca5a5; }
+  .tracklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .trk {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+    padding: 10px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
+  }
+  .trk.editing { border-color: var(--accent); }
+  .trk .n { color: var(--muted); font-weight: 800; text-align: center; }
+  .trk .t { font-weight: 800; overflow-wrap: anywhere; }
+  .trk .a { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
+  .trk .warn { color: var(--amber); font-size: .8rem; font-weight: 700; }
+  .trk .d { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); white-space: nowrap; }
+  .trk .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  @media (max-width: 640px) {
+    .trk { grid-template-columns: 28px minmax(0, 1fr) auto; }
+    .trk .acts { grid-column: 1 / -1; justify-content: stretch; }
+    .trk .acts .btn { flex: 1; }
+  }
+  .io-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+
+  footer { margin-top: 18px; color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; }
+  kbd { background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 1px 7px; font-family: inherit; font-weight: 800; color: var(--text); font-size: .82rem; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">⚽</div>
+      <h1>Idrettshall Soundboard <small>Målmusikk via Spotify</small></h1>
+    </div>
+    <div class="pills">
+      <span class="pill" id="statusPill" title="Tilkobling til Spotify"><span class="dot" id="statusDot"></span><span id="statusText">Ikke tilkoblet</span></span>
+      <span class="pill" id="wakePill" title="Hindrer at skjermen slår seg av">🔆 <span id="wakeText">Skjermlås: …</span></span>
+      <button class="pill unlock" id="unlockPill" hidden>🔊 Klikk for å aktivere lyd</button>
+    </div>
+  </header>
+
+  <div id="notices" role="status" aria-live="polite"></div>
+
+  <!-- ===== Spotify Oppsett ===== -->
+  <details class="panel" id="setupPanel">
+    <summary>⚙️ Spotify Oppsett <span class="sum-extra" id="setupSummary"></span></summary>
+    <div class="panel-body">
+      <label class="lbl" for="redirectUri">Redirect URI (lim inn i Spotify Developer Dashboard)</label>
+      <div class="uri-box">
+        <code id="redirectUri"></code>
+        <button class="btn" id="copyUriBtn" type="button">📋 Kopier URL</button>
+      </div>
+      <div id="envWarning" class="warnbox" hidden></div>
+
+      <label class="lbl" for="clientId">Client ID</label>
+      <div class="row">
+        <input class="grow" id="clientId" type="text" autocomplete="off" spellcheck="false" placeholder="f.eks. 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d">
+        <button class="btn spotify" id="loginBtn" type="button">Logg inn med Spotify</button>
+        <button class="btn danger" id="logoutBtn" type="button" hidden>Logg ut</button>
+      </div>
+      <div class="hint" id="clientIdHint">Lagres automatisk på denne enheten.</div>
+      <div id="accountBox" class="okbox" hidden></div>
+
+      <h3>Slik setter du opp (én gang)</h3>
+      <ol class="steps">
+        <li>Gå til <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> og trykk <b>Create app</b>.</li>
+        <li>Lim inn <b>Redirect URI</b>-en over under <b>Redirect URIs</b> (nøyaktig lik, inkludert evt. avsluttende <code>/</code>), og huk av for <b>Web API</b> og <b>Web Playback SDK</b>.</li>
+        <li>Kopier <b>Client ID</b> fra appens innstillinger og lim den inn her. (Client Secret trengs <b>ikke</b>.)</li>
+        <li>Mens appen er i «Development mode»: legg til e-posten til Spotify-kontoen som skal brukes under <b>User Management</b>.</li>
+        <li>Kontoen må ha <b>Spotify Premium</b>. Bruk en nettleser på PC/Mac (Chrome, Edge, Firefox eller Safari) – mobilnettlesere støttes ikke av Spotify sin nettleserspiller.</li>
+      </ol>
+    </div>
+  </details>
+
+  <!-- ===== Hovedkontroller ===== -->
+  <section class="grid">
+    <div class="controls">
+      <button id="goalBtn" type="button" aria-keyshortcuts="Space M">MÅL!<span class="sub">SPACE / M</span></button>
+      <div class="stop-row">
+        <button id="fadeBtn" type="button" aria-keyshortcuts="S">STOPP (FADE UT)<span class="sub">S · 1,5 SEK</span></button>
+        <div class="stop2">
+          <button id="killBtn" type="button" aria-keyshortcuts="Escape">⛔ Nødstopp<br><span class="small">(kutt direkte · Esc)</span></button>
+          <div class="vol">
+            <div class="vtop"><label for="volume">Hovedvolum</label><b id="volumeVal">100 %</b></div>
+            <input type="range" id="volume" min="0" max="100" step="1" value="100">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="card">
+        <h2>Spiller nå</h2>
+        <div class="np">
+          <div class="art" id="npArt" aria-hidden="true">♪</div>
+          <div class="meta">
+            <div class="title" id="npTitle">Ingenting spilles</div>
+            <div class="artist" id="npArtist">Trykk MÅL! for å starte</div>
+            <div class="tags" id="npTags"></div>
+          </div>
+        </div>
+        <div class="prog" id="npProg" hidden><i id="npBar"></i><b id="npDropMark" hidden></b></div>
+        <div class="times" id="npTimes" hidden><span id="npPos">0:00</span><span id="npDur">0:00</span></div>
+      </div>
+
+      <div class="card">
+        <div class="round-head">
+          <div>
+            <h2 style="margin:0">Denne runden</h2>
+            <div class="count" id="roundCount">–</div>
+          </div>
+          <button class="btn sm" id="resetRoundBtn" type="button">↻ Nullstill runde</button>
+        </div>
+        <div class="chips" id="roundChips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Administrer målsanger ===== -->
+  <details class="panel" id="adminPanel">
+    <summary>🎵 Administrer målsanger <span class="sum-extra" id="adminSummary"></span></summary>
+    <div class="panel-body">
+      <form id="trackForm" autocomplete="off" novalidate>
+        <h3 id="formTitle">Legg til ny sang</h3>
+        <div class="form-grid">
+          <div class="f-link">
+            <label class="lbl" for="fLink">Spotify-lenke eller URI</label>
+            <input id="fLink" type="text" spellcheck="false" placeholder="https://open.spotify.com/track/…  eller  spotify:track:…">
+            <div class="hint" id="linkHint"></div>
+          </div>
+          <div class="f-title">
+            <label class="lbl" for="fTitle">Tittel</label>
+            <input id="fTitle" type="text" placeholder="Hentes automatisk når du er innlogget">
+          </div>
+          <div class="f-artist">
+            <label class="lbl" for="fArtist">Artist</label>
+            <input id="fArtist" type="text">
+          </div>
+          <div class="f-drop">
+            <label class="lbl" for="fDrop">Starttid / dropp (sek)</label>
+            <div class="drop-wrap">
+              <input id="fDrop" type="text" inputmode="decimal" placeholder="48.5">
+              <button class="btn sm" id="nowPosBtn" type="button" title="Bruk nåværende avspillingsposisjon">⏱ Nå</button>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" id="saveTrackBtn" type="submit">➕ Legg til sang</button>
+          <button class="btn" id="testFormBtn" type="button">▶ Test dropp</button>
+          <button class="btn ghost" id="cancelEditBtn" type="button" hidden>Avbryt redigering</button>
+        </div>
+        <div class="hint">Tips: Spill av sangen med «Test dropp», juster tiden og trykk «⏱ Nå» når droppet kommer for å hente eksakt posisjon.</div>
+      </form>
+
+      <h3>Låtliste</h3>
+      <ul class="tracklist" id="trackList"></ul>
+
+      <div class="io-row">
+        <button class="btn" id="exportBtn" type="button">⬇ Eksporter JSON</button>
+        <button class="btn" id="importBtn" type="button">⬆ Importer JSON</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <button class="btn ghost" id="defaultsBtn" type="button">Tilbakestill til eksempellåter</button>
+      </div>
+    </div>
+  </details>
+
+  <footer>
+    <span><kbd>Space</kbd> / <kbd>M</kbd> MÅL!</span>
+    <span><kbd>S</kbd> Stopp (fade ut)</span>
+    <span><kbd>Esc</kbd> Nødstopp</span>
+    <span>Snarveier er av mens du skriver i tekstfelt (Esc virker alltid).</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* =====================================================================
+   * Konfigurasjon
+   * ===================================================================== */
+  const SCOPES = ['streaming', 'user-read-email', 'user-read-private', 'user-modify-playback-state', 'user-read-playback-state'];
+  const REDIRECT_URI = window.location.origin + window.location.pathname;
+  const DEVICE_NAME = 'Idrettshall Soundboard';
+  const FADE_MS = 1500;
+  const FADE_STEPS = 15;
+  const LS = {
+    clientId: 'soundboard.clientId',
+    tokens: 'soundboard.tokens',
+    tracks: 'soundboard.tracks',
+    played: 'soundboard.played',
+    volume: 'soundboard.volume',
+    verifier: 'soundboard.pkceVerifier',
+    state: 'soundboard.pkceState'
+  };
+  const PREMIUM_MSG = 'Denne Spotify-kontoen har ikke Premium. Spotify krever Premium for å spille musikk i nettleseren (Web Playback SDK). Logg inn med en Premium-konto.';
+
+  // Eksempellåter. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «⏱ Nå».
+  const DEFAULT_TRACKS = [
+    { id: 'std-1', tittel: 'We Will Rock You', artist: 'Queen', spotifyUri: 'spotify:track:54flyrjcdnQdco7300avMJ', dropMs: 0 },
+    { id: 'std-2', tittel: 'Seven Nation Army', artist: 'The White Stripes', spotifyUri: 'spotify:track:7i6r9KotUPQg3ozKKgEPIN', dropMs: 0 },
+    { id: 'std-3', tittel: 'Levels', artist: 'Avicii', spotifyUri: 'spotify:track:5UqCQaDshqbIk3pkhy4Pjg', dropMs: 62000 },
+    { id: 'std-4', tittel: "Don't You Worry Child", artist: 'Swedish House Mafia, John Martin', spotifyUri: 'spotify:track:2V65y3PX4DkRhy1djlxd9p', dropMs: 82000 },
+    { id: 'std-5', tittel: 'Sandstorm', artist: 'Darude', spotifyUri: 'spotify:track:6Sy9BUbgFse0n0LPA5lwy5', dropMs: 0 },
+    { id: 'std-6', tittel: 'Song 2', artist: 'Blur', spotifyUri: 'spotify:track:3GfOAdcoc3X5GPiiXmpBjK', dropMs: 8500 }
+  ];
+
+  /* =====================================================================
+   * Hjelpefunksjoner
+   * ===================================================================== */
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const store = {
+    get(key, fallback) {
+      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; }
+    },
+    set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* lagring blokkert */ } },
+    del(key) { try { localStorage.removeItem(key); } catch { /* ignorer */ } }
+  };
+  const newId = () => 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  function fmtMs(ms, withTenths = false) {
+    ms = Math.max(0, Math.round(ms || 0));
+    const totalSec = ms / 1000;
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec - m * 60;
+    if (withTenths) {
+      const ss = s.toFixed(1).padStart(4, '0');
+      return `${m}:${ss}`;
+    }
+    return `${m}:${String(Math.floor(s)).padStart(2, '0')}`;
+  }
+
+  /** Trekker ut Spotify Track ID fra lenke, URI eller ren ID. */
+  function parseTrackId(input) {
+    if (!input) return null;
+    const s = String(input).trim();
+    const m = s.match(/(?:spotify:track:|open\.spotify\.com\/(?:intl-[a-z]{2}(?:-[a-z]{2})?\/)?(?:embed\/)?track\/)([A-Za-z0-9]{22})/i);
+    if (m) return m[1];
+    if (/^[A-Za-z0-9]{22}$/.test(s)) return s;
+    return null;
+  }
+  const uriToId = (uri) => parseTrackId(uri);
+
+  function parseSeconds(str) {
+    if (str === null || str === undefined) return NaN;
+    const s = String(str).trim().replace(',', '.');
+    if (s === '') return 0;
+    // Godta også m:ss(.d)
+    const mm = s.match(/^(\d+):(\d{1,2}(?:\.\d+)?)$/);
+    if (mm) return Number(mm[1]) * 60 + Number(mm[2]);
+    return Number(s);
+  }
+
+  /* =====================================================================
+   * Varsler
+   * ===================================================================== */
+  const ICONS = { error: '⚠️', warn: '⚠️', info: 'ℹ️', success: '✅' };
+  function notify(message, type = 'error', opts = {}) {
+    const box = $('notices');
+    if (opts.key) clearNotice(opts.key);
+    const el = document.createElement('div');
+    el.className = 'notice ' + type;
+    if (opts.key) el.dataset.key = opts.key;
+    const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = ICONS[type] || '•';
+    const msg = document.createElement('span'); msg.className = 'msg'; msg.textContent = message;
+    const x = document.createElement('button'); x.type = 'button'; x.setAttribute('aria-label', 'Lukk'); x.textContent = '✕';
+    x.addEventListener('click', () => el.remove());
+    el.append(ic, msg, x);
+    box.prepend(el);
+    while (box.children.length > 5) box.lastElementChild.remove();
+    const auto = opts.timeout ?? (type === 'info' || type === 'success' ? 4500 : 0);
+    if (auto) setTimeout(() => el.remove(), auto);
+    return el;
+  }
+  function clearNotice(key) {
+    document.querySelectorAll(`#notices .notice[data-key="${key}"]`).forEach((n) => n.remove());
+  }
+
+  /* =====================================================================
+   * Tilstand
+   * ===================================================================== */
+  let tracks = loadTracks();
+  let played = (store.get(LS.played, []) || []).filter((id) => tracks.some((t) => t.id === id));
+  let masterVolume = clampVol(store.get(LS.volume, 100));
+  let tokens = store.get(LS.tokens, null);
+  let profile = null;
+
+  let player = null;
+  let deviceId = null;
+  let sdkLoading = false;
+  let authRetries = 0;
+  let shuffleOffFor = null;
+  let audioUnlocked = false;
+
+  let busy = false;
+  let fadeToken = 0;
+  let isFading = false;
+
+  let nowPlaying = null;       // { track, mode: 'goal'|'test', at }
+  let liveState = null;        // fra player_state_changed
+  const invalidIds = new Map(); // track.id -> grunn
+
+  function clampVol(v) { v = Number(v); return Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 100; }
+
+  function normalizeTrack(o) {
+    if (!o || typeof o !== 'object') return null;
+    const tid = parseTrackId(o.spotifyUri || o.uri || o.url || o.link || o.trackId || '');
+    if (!tid) return null;
+    let dropMs = Number(o.dropMs);
+    if (!Number.isFinite(dropMs) && o.dropSek !== undefined) dropMs = Number(o.dropSek) * 1000;
+    if (!Number.isFinite(dropMs) || dropMs < 0) dropMs = 0;
+    return {
+      id: (typeof o.id === 'string' && o.id.trim()) ? o.id.trim().slice(0, 64) : newId(),
+      tittel: String(o.tittel ?? o.title ?? 'Ukjent tittel').slice(0, 200),
+      artist: String(o.artist ?? '').slice(0, 200),
+      spotifyUri: 'spotify:track:' + tid,
+      dropMs: Math.round(dropMs)
+    };
+  }
+  function dedupeIds(list) {
+    const seen = new Set();
+    return list.map((t) => { if (seen.has(t.id)) t = { ...t, id: newId() }; seen.add(t.id); return t; });
+  }
+  function loadTracks() {
+    const saved = store.get(LS.tracks, null);
+    if (!Array.isArray(saved)) return DEFAULT_TRACKS.map((t) => ({ ...t }));
+    return dedupeIds(saved.map(normalizeTrack).filter(Boolean));
+  }
+  function saveTracks() { store.set(LS.tracks, tracks); }
+  function savePlayed() { store.set(LS.played, played); }
+
+  /* =====================================================================
+   * Spotify-autentisering (Authorization Code with PKCE)
+   * ===================================================================== */
+  function getClientId() { return (store.get(LS.clientId, '') || '').trim(); }
+
+  function randomString(len) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const bytes = crypto.getRandomValues(new Uint8Array(len));
+    return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+  }
+  async function codeChallenge(verifier) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  async function login() {
+    const cid = $('clientId').value.trim();
+    store.set(LS.clientId, cid);
+    if (!/^[0-9a-f]{32}$/i.test(cid)) {
+      notify('Client ID ser ikke riktig ut. Den skal være 32 tegn (0–9, a–f) og finnes under appen din i Spotify Developer Dashboard.', 'error', { key: 'login' });
+      $('clientId').focus();
+      return;
+    }
+    if (!window.isSecureContext || !window.crypto || !crypto.subtle) {
+      notify('Innlogging krever en sikker tilkobling (HTTPS). Publiser siden på f.eks. Netlify Drop eller GitHub Pages, eller bruk http://127.0.0.1 lokalt.', 'error', { key: 'login' });
+      return;
+    }
+    const verifier = randomString(64);
+    const state = randomString(16);
+    store.set(LS.verifier, verifier);
+    store.set(LS.state, state);
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: cid,
+      scope: SCOPES.join(' '),
+      redirect_uri: REDIRECT_URI,
+      code_challenge_method: 'S256',
+      code_challenge: await codeChallenge(verifier),
+      state
+    });
+    window.location.assign('https://accounts.spotify.com/authorize?' + params.toString());
+  }
+
+  async function tokenRequest(body) {
+    let res;
+    try {
+      res = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      });
+    } catch (e) {
+      const err = new Error('Ingen kontakt med Spotify (nettverksfeil).'); err.code = 'network'; throw err;
+    }
+    let data = {};
+    try { data = await res.json(); } catch { /* tomt svar */ }
+    if (!res.ok) {
+      const err = new Error(data.error_description || data.error || ('HTTP ' + res.status));
+      err.code = data.error || 'http_' + res.status;
+      throw err;
+    }
+    return data;
+  }
+
+  function saveTokens(data) {
+    tokens = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || (tokens && tokens.refresh_token),
+      expires_at: Date.now() + (Number(data.expires_in) || 3600) * 1000
+    };
+    store.set(LS.tokens, tokens);
+    scheduleRefresh();
+  }
+
+  /** Håndterer retur fra Spotify (?code=… / ?error=…). Returnerer true hvis innlogging lyktes. */
+  async function handleRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('code') && !params.has('error')) return false;
+    const code = params.get('code');
+    const error = params.get('error');
+    const state = params.get('state');
+    // Rens adressefeltet (fjerner ?code=… så det ikke kan gjenbrukes / bokmerkes)
+    window.history.replaceState(null, '', REDIRECT_URI + window.location.hash);
+
+    const expectedState = store.get(LS.state, null);
+    const verifier = store.get(LS.verifier, null);
+    store.del(LS.state); store.del(LS.verifier);
+
+    if (error) {
+      notify(error === 'access_denied'
+        ? 'Innloggingen ble avbrutt – du må godta tilgangen for at soundboardet skal kunne spille musikk.'
+        : 'Spotify-innlogging feilet: ' + error, 'error', { key: 'login' });
+      return false;
+    }
+    if (!expectedState || state !== expectedState || !verifier) {
+      notify('Innloggingen kunne ikke verifiseres (sikkerhetssjekk feilet). Prøv «Logg inn med Spotify» på nytt.', 'error', { key: 'login' });
+      return false;
+    }
+    try {
+      const data = await tokenRequest(new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: getClientId(),
+        code_verifier: verifier
+      }));
+      saveTokens(data);
+      notify('Innlogget med Spotify!', 'success', { key: 'login' });
+      return true;
+    } catch (e) {
+      let msg = 'Kunne ikke fullføre innloggingen: ' + e.message;
+      if (/redirect/i.test(e.message)) msg += ' – sjekk at Redirect URI i Spotify Dashboard er nøyaktig: ' + REDIRECT_URI;
+      if (e.code === 'invalid_client') msg += ' – sjekk at Client ID er riktig.';
+      notify(msg, 'error', { key: 'login' });
+      return false;
+    }
+  }
+
+  let refreshPromise = null;
+  let refreshTimer = null;
+
+  function refreshToken() {
+    if (refreshPromise) return refreshPromise;
+    refreshPromise = (async () => {
+      if (!tokens || !tokens.refresh_token) {
+        const e = new Error('Ikke innlogget'); e.code = 'no_token'; throw e;
+      }
+      try {
+        const data = await tokenRequest(new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: tokens.refresh_token,
+          client_id: getClientId()
+        }));
+        saveTokens(data);
+        clearNotice('auth');
+        return tokens.access_token;
+      } catch (e) {
+        if (e.code === 'invalid_grant' || e.code === 'invalid_client' || e.code === 'invalid_request') {
+          logout(true);
+          notify('Spotify-innloggingen har utløpt og kunne ikke fornyes automatisk. Trykk «Logg inn med Spotify» på nytt.', 'error', { key: 'auth' });
+          openSetup();
+        } else {
+          notify('Klarte ikke å fornye Spotify-tilgangen (nettverksproblem?). Prøver igjen automatisk …', 'warn', { key: 'auth' });
+          clearTimeout(refreshTimer);
+          refreshTimer = setTimeout(() => refreshToken().catch(() => {}), 30000);
+        }
+        throw e;
+      }
+    })();
+    refreshPromise.finally(() => { refreshPromise = null; }).catch(() => {});
+    return refreshPromise;
+  }
+
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
+    if (!tokens) return;
+    // Forny 5 minutter før utløp, så det aldri skjer midt i et mål.
+    const delay = Math.max(5000, tokens.expires_at - Date.now() - 5 * 60 * 1000);
+    refreshTimer = setTimeout(() => refreshToken().catch(() => {}), delay);
+  }
+
+  async function getToken() {
+    if (!tokens) { const e = new Error('Ikke innlogget'); e.code = 'no_token'; throw e; }
+    if (Date.now() > tokens.expires_at - 60 * 1000) return refreshToken();
+    return tokens.access_token;
+  }
+
+  function logout(silent) {
+    clearTimeout(refreshTimer);
+    tokens = null; profile = null;
+    store.del(LS.tokens);
+    if (player) { try { player.disconnect(); } catch { /* ignorer */ } }
+    player = null; deviceId = null; shuffleOffFor = null; liveState = null;
+    setStatus('off', 'Ikke tilkoblet');
+    renderAuth();
+    renderNowPlaying();
+    if (!silent) notify('Du er logget ut av Spotify.', 'info');
+  }
+
+  /* =====================================================================
+   * Spotify Web API
+   * ===================================================================== */
+  async function api(method, path, body, attempt = 0) {
+    const token = await getToken();
+    let res;
+    try {
+      res = await fetch('https://api.spotify.com/v1' + path, {
+        method,
+        headers: Object.assign({ Authorization: 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
+        body: body ? JSON.stringify(body) : undefined
+      });
+    } catch (e) {
+      const err = new Error('Ingen nettverkskontakt med Spotify.'); err.status = 0; throw err;
+    }
+    if (res.status === 401 && attempt === 0) {
+      await refreshToken();
+      return api(method, path, body, attempt + 1);
+    }
+    if (res.status === 429 && attempt < 2) {
+      const wait = Number(res.headers.get('Retry-After')) || 1;
+      if (wait <= 3) { await sleep(wait * 1000); return api(method, path, body, attempt + 1); }
+    }
+    if (!res.ok) {
+      let data = {};
+      try { data = await res.json(); } catch { /* ingen JSON */ }
+      const err = new Error((data.error && data.error.message) || ('HTTP ' + res.status));
+      err.status = res.status;
+      err.reason = data.error && data.error.reason;
+      throw err;
+    }
+    if (res.status === 204) return null;
+    const text = await res.text();
+    try { return text ? JSON.parse(text) : null; } catch { return null; }
+  }
+
+  function explainError(e) {
+    if (!e) return 'Ukjent feil.';
+    if (e.code === 'no_token') return 'Du er ikke logget inn med Spotify. Åpne «Spotify Oppsett» og logg inn.';
+    if (e.status === 0) return 'Ingen nettverkskontakt med Spotify. Sjekk internettforbindelsen i hallen.';
+    if (e.status === 401) return 'Spotify-tilgangen har utløpt. Prøver å fornye … Logg inn på nytt hvis feilen gjentar seg.';
+    if (e.status === 403 && (e.reason === 'PREMIUM_REQUIRED' || /premium/i.test(e.message))) return PREMIUM_MSG;
+    if (e.status === 403) return 'Spotify avviste kommandoen (' + e.message + '). Sjekk at kontoen har Premium og er lagt til under «User Management» i Spotify Dashboard.';
+    if (e.status === 404) return 'Fant ikke nettleserspilleren hos Spotify. Prøver å koble til på nytt – trykk igjen om et øyeblikk.';
+    if (e.status === 429) return 'Spotify ber oss vente litt (for mange forespørsler). Prøv igjen om noen sekunder.';
+    if (e.status >= 500) return 'Spotify har tekniske problemer akkurat nå (' + e.status + '). Prøv igjen.';
+    return 'Spotify-feil: ' + e.message;
+  }
+
+  async function transferPlayback() {
+    if (!deviceId) return;
+    try {
+      await api('PUT', '/me/player', { device_ids: [deviceId], play: false });
+    } catch (e) {
+      if (e.status === 404 || e.status === 502) { await sleep(1000); await api('PUT', '/me/player', { device_ids: [deviceId], play: false }); }
+      else throw e;
+    }
+  }
+
+  async function ensureShuffleOff() {
+    if (!deviceId || shuffleOffFor === deviceId) return;
+    await api('PUT', '/me/player/shuffle?state=false&device_id=' + encodeURIComponent(deviceId));
+    shuffleOffFor = deviceId;
+  }
+
+  async function loadProfile() {
+    try {
+      profile = await api('GET', '/me');
+      if (profile && profile.product && profile.product !== 'premium') {
+        notify(PREMIUM_MSG, 'error', { key: 'premium' });
+      }
+    } catch (e) {
+      if (e.status === 403) notify('Spotify nektet tilgang til kontoen. Er e-posten lagt til under «User Management» i Spotify Dashboard?', 'error', { key: 'premium' });
+    }
+    renderAuth();
+  }
+
+  /** Sjekker at alle sangene i listen finnes og kan spilles. */
+  async function validateTracks() {
+    if (!tokens || !tracks.length) return;
+    const ids = [...new Set(tracks.map((t) => uriToId(t.spotifyUri)).filter(Boolean))];
+    const result = new Map();
+    try {
+      for (let i = 0; i < ids.length; i += 50) {
+        const chunk = ids.slice(i, i + 50);
+        const data = await api('GET', '/tracks?market=from_token&ids=' + chunk.join(','));
+        (data && data.tracks || []).forEach((tr, idx) => {
+          if (!tr) result.set(chunk[idx], 'Finnes ikke på Spotify – sjekk lenken');
+          else if (tr.is_playable === false) result.set(chunk[idx], 'Ikke tilgjengelig i ditt land');
+        });
+      }
+    } catch { return; /* validering er valgfri */ }
+    invalidIds.clear();
+    tracks.forEach((t) => { const r = result.get(uriToId(t.spotifyUri)); if (r) invalidIds.set(t.id, r); });
+    renderAll();
+    if (invalidIds.size) {
+      notify(`${invalidIds.size} sang(er) i listen kan ikke spilles (merket med ⚠ under «Administrer målsanger»). De hoppes over av MÅL!-knappen.`, 'warn', { key: 'invalid' });
+    } else clearNotice('invalid');
+  }
+
+  /* =====================================================================
+   * Spotify Web Playback SDK
+   * ===================================================================== */
+  function initPlayer() {
+    if (player || sdkLoading || !tokens) return;
+    setStatus('wait', 'Kobler til Spotify …');
+    window.onSpotifyWebPlaybackSDKReady = createPlayer;
+    if (window.Spotify && window.Spotify.Player) { createPlayer(); return; }
+    sdkLoading = true;
+    const s = document.createElement('script');
+    s.src = 'https://sdk.scdn.co/spotify-player.js';
+    s.async = true;
+    s.onerror = () => {
+      sdkLoading = false;
+      setStatus('off', 'Spilleren kunne ikke lastes');
+      notify('Kunne ikke laste Spotify-spilleren (sdk.scdn.co). Sjekk nettverket, og slå av eventuelle annonseblokkere for denne siden.', 'error', { key: 'sdk' });
+    };
+    document.head.appendChild(s);
+  }
+
+  function createPlayer() {
+    sdkLoading = false;
+    if (player || !tokens) return;
+    player = new window.Spotify.Player({
+      name: DEVICE_NAME,
+      getOAuthToken: (cb) => { getToken().then(cb).catch(() => {}); },
+      volume: masterVolume / 100
+    });
+
+    player.addListener('ready', async ({ device_id }) => {
+      deviceId = device_id;
+      shuffleOffFor = null;
+      authRetries = 0;
+      setStatus('on', 'Tilkoblet · ' + DEVICE_NAME);
+      clearNotice('device'); clearNotice('sdk');
+      renderUnlock();
+      try { await transferPlayback(); } catch (e) { notify('Kunne ikke overføre avspillingen til nettleseren: ' + explainError(e), 'warn', { key: 'transfer' }); }
+      ensureShuffleOff().catch(() => {});
+      player.setVolume(masterVolume / 100).catch(() => {});
+    });
+
+    player.addListener('not_ready', ({ device_id }) => {
+      if (device_id === deviceId) {
+        deviceId = null;
+        setStatus('wait', 'Frakoblet – prøver igjen …');
+        notify('Mistet forbindelsen til Spotify-spilleren. Prøver å koble til igjen …', 'warn', { key: 'device' });
+      }
+    });
+
+    player.addListener('initialization_error', ({ message }) => {
+      setStatus('off', 'Nettleseren støttes ikke');
+      notify('Denne nettleseren kan ikke kjøre Spotify-spilleren. Bruk Chrome, Edge, Firefox eller Safari på PC/Mac (mobilnettlesere støttes ikke). Detaljer: ' + message, 'error', { key: 'sdk' });
+    });
+
+    player.addListener('authentication_error', async () => {
+      if (authRetries++ < 2) {
+        try { await refreshToken(); player && player.connect(); return; } catch { /* faller gjennom */ }
+      }
+      setStatus('off', 'Innlogging utløpt');
+      notify('Spotify godtok ikke innloggingen. Logg inn på nytt under «Spotify Oppsett».', 'error', { key: 'auth' });
+      openSetup();
+    });
+
+    player.addListener('account_error', () => {
+      setStatus('off', 'Krever Spotify Premium');
+      notify(PREMIUM_MSG, 'error', { key: 'premium' });
+    });
+
+    player.addListener('playback_error', ({ message }) => {
+      notify('Avspillingsfeil: ' + message, 'error', { key: 'playback' });
+    });
+
+    player.addListener('autoplay_failed', () => {
+      audioUnlocked = false;
+      renderUnlock();
+      notify('Nettleseren blokkerte automatisk lydavspilling. Klikk én gang hvor som helst på siden (eller «Aktiver lyd» øverst), og trykk MÅL! igjen.', 'warn', { key: 'autoplay' });
+    });
+
+    player.addListener('player_state_changed', onPlayerState);
+
+    player.connect().then((ok) => {
+      if (!ok) {
+        setStatus('off', 'Kunne ikke koble til');
+        notify('Spotify-spilleren kunne ikke koble til. Last inn siden på nytt.', 'error', { key: 'sdk' });
+      }
+    });
+  }
+
+  /** Må kalles direkte i en brukerhandling (klikk/tast) for å tillate lyd. */
+  function unlockAudio() {
+    if (!player || audioUnlocked) return;
+    try { if (typeof player.activateElement === 'function') player.activateElement(); } catch { /* ignorer */ }
+    audioUnlocked = true;
+    clearNotice('autoplay');
+    renderUnlock();
+  }
+
+  function onPlayerState(state) {
+    if (!state) { liveState = null; renderNowPlaying(); return; }
+    const cur = state.track_window && state.track_window.current_track;
+    liveState = {
+      paused: state.paused,
+      position: state.position,
+      duration: state.duration,
+      stamp: performance.now(),
+      uri: cur && cur.uri,
+      linkedUri: cur && cur.linked_from && cur.linked_from.uri,
+      name: cur && cur.name,
+      artists: cur && cur.artists ? cur.artists.map((a) => a.name).join(', ') : '',
+      image: cur && cur.album && cur.album.images && cur.album.images.length ? cur.album.images[0].url : null
+    };
+    if (state.shuffle && shuffleOffFor === deviceId) { shuffleOffFor = null; ensureShuffleOff().catch(() => {}); }
+    renderNowPlaying();
+  }
+
+  /* =====================================================================
+   * Avspilling
+   * ===================================================================== */
+  async function playTrack(track, mode) {
+    if (!tokens) {
+      notify('Du må logge inn med Spotify først (se «Spotify Oppsett» øverst).', 'error', { key: 'play' });
+      openSetup();
+      return false;
+    }
+    if (!player || !deviceId) {
+      notify('Nettleserspilleren er ikke klar ennå. Vent til statusen øverst er grønn, og prøv igjen.', 'warn', { key: 'play' });
+      initPlayer();
+      return false;
+    }
+    cancelFade();
+    const body = { uris: [track.spotifyUri], position_ms: Math.max(0, Math.round(track.dropMs || 0)) };
+    const path = '/me/player/play?device_id=' + encodeURIComponent(deviceId);
+    try {
+      await Promise.all([
+        ensureShuffleOff().catch(() => {}),
+        player.setVolume(masterVolume / 100).catch(() => {})
+      ]);
+      try {
+        await api('PUT', path, body);
+      } catch (e) {
+        if (e.status !== 404) throw e;
+        await transferPlayback();
+        await api('PUT', path, body);
+      }
+    } catch (e) {
+      notify(explainError(e), 'error', { key: 'play' });
+      return false;
+    }
+    clearNotice('play'); clearNotice('playback');
+    nowPlaying = { track, mode, at: Date.now() };
+    renderNowPlaying();
+    return true;
+  }
+
+  function pickNext() {
+    const pool = tracks.filter((t) => !invalidIds.has(t.id));
+    const usable = pool.length ? pool : tracks;
+    let remaining = usable.filter((t) => !played.includes(t.id));
+    if (!remaining.length) {
+      const last = played[played.length - 1];
+      played = [];
+      savePlayed();
+      notify('Alle sangene er spilt – ny runde startet!', 'info', { key: 'round' });
+      // Unngå at samme sang spilles to ganger på rad over rundeskiftet
+      remaining = usable.length > 1 ? usable.filter((t) => t.id !== last) : usable;
+    }
+    return remaining[Math.floor(Math.random() * remaining.length)];
+  }
+
+  async function goal() {
+    const btn = $('goalBtn');
+    if (busy) return;
+    if (!tracks.length) {
+      notify('Låtlisten er tom. Legg til sanger under «Administrer målsanger».', 'warn', { key: 'play' });
+      return;
+    }
+    busy = true;
+    btn.classList.add('busy');
+    try {
+      const track = pickNext();
+      if (!track) return;
+      const ok = await playTrack(track, 'goal');
+      if (ok) {
+        if (!played.includes(track.id)) played.push(track.id);
+        savePlayed();
+        renderRound();
+        btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
+      }
+    } finally {
+      busy = false;
+      btn.classList.remove('busy');
+    }
+  }
+
+  function cancelFade() {
+    fadeToken++;
+    isFading = false;
+    $('fadeBtn').classList.remove('fading');
+  }
+
+  async function fadeOut() {
+    if (!player) { return emergencyStop(); }
+    if (isFading) return;
+    const my = ++fadeToken;
+    isFading = true;
+    $('fadeBtn').classList.add('fading');
+    try {
+      let start = masterVolume / 100;
+      try { const v = await player.getVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk hovedvolum */ }
+      const stepMs = FADE_MS / FADE_STEPS; // 15 steg à 100 ms
+      const t0 = performance.now();
+      for (let i = 1; i <= FADE_STEPS; i++) {
+        await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
+        if (my !== fadeToken) return;
+        const v = Math.max(0, start * (1 - i / FADE_STEPS));
+        await player.setVolume(v);
+      }
+      if (my !== fadeToken) return;
+      await player.pause();
+      await sleep(150);
+      if (my !== fadeToken) return;
+      await player.setVolume(masterVolume / 100); // klar til neste mål
+    } catch (e) {
+      notify('Fade-out feilet: ' + (e && e.message ? e.message : e), 'error');
+      try { await player.pause(); await player.setVolume(masterVolume / 100); } catch { /* ignorer */ }
+    } finally {
+      if (my === fadeToken) { isFading = false; $('fadeBtn').classList.remove('fading'); }
+    }
+  }
+
+  async function emergencyStop() {
+    cancelFade();
+    try {
+      if (player) await player.pause();
+      else if (tokens) await api('PUT', '/me/player/pause');
+    } catch (e) {
+      if (e.status !== 403) notify(explainError(e), 'error', { key: 'play' });
+    }
+    if (player) { try { await player.setVolume(masterVolume / 100); } catch { /* ignorer */ } }
+  }
+
+  /* =====================================================================
+   * Wake Lock
+   * ===================================================================== */
+  let wakeLock = null;
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) { setWake('unsupported'); return; }
+    if (wakeLock || document.visibilityState !== 'visible') return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      setWake('on');
+      wakeLock.addEventListener('release', () => { wakeLock = null; setWake('off'); });
+    } catch {
+      setWake('off');
+    }
+  }
+  function setWake(s) {
+    const t = $('wakeText');
+    if (s === 'on') { t.textContent = 'Skjermen holdes på'; $('wakePill').title = 'Wake Lock er aktiv'; }
+    else if (s === 'unsupported') { t.textContent = 'Skjermlås ikke støttet'; $('wakePill').title = 'Nettleseren støtter ikke Wake Lock – slå av dvale/skjermsparer manuelt.'; }
+    else { t.textContent = 'Skjermen kan slå seg av'; $('wakePill').title = 'Klikk hvor som helst for å prøve igjen'; }
+  }
+
+  /* =====================================================================
+   * Rendering
+   * ===================================================================== */
+  function setStatus(state, text) {
+    const dot = $('statusDot');
+    dot.className = 'dot' + (state === 'on' ? ' on' : state === 'wait' ? ' wait' : '');
+    $('statusText').textContent = text;
+    $('setupSummary').textContent = state === 'on' ? '· tilkoblet' : tokens ? '· ' + text.toLowerCase() : '· ikke innlogget';
+  }
+
+  function renderUnlock() {
+    $('unlockPill').hidden = !(player && !audioUnlocked);
+  }
+
+  function openSetup() { $('setupPanel').open = true; }
+
+  function renderAuth() {
+    const loggedIn = !!tokens;
+    $('loginBtn').hidden = loggedIn;
+    $('logoutBtn').hidden = !loggedIn;
+    const box = $('accountBox');
+    if (loggedIn) {
+      box.hidden = false;
+      if (profile) {
+        const prem = profile.product === 'premium';
+        box.textContent = `Innlogget som ${profile.display_name || profile.id}${profile.email ? ' (' + profile.email + ')' : ''} · ${prem ? 'Premium ✓' : 'IKKE Premium – avspilling vil ikke fungere'}`;
+        box.className = prem ? 'okbox' : 'warnbox';
+      } else {
+        box.textContent = 'Innlogget med Spotify.';
+        box.className = 'okbox';
+      }
+    } else {
+      box.hidden = true;
+    }
+  }
+
+  function renderEnvWarning() {
+    const w = $('envWarning');
+    const msgs = [];
+    const { protocol, hostname } = window.location;
+    if (protocol === 'file:') {
+      msgs.push('Siden er åpnet som en lokal fil (file://). Spotify krever en ekte nettadresse – last opp index.html til Netlify Drop eller GitHub Pages.');
+    } else if (hostname === 'localhost') {
+      msgs.push('Spotify godtar ikke «localhost» i Redirect URI. Åpne siden via http://127.0.0.1:PORT i stedet, eller bruk HTTPS.');
+    } else if (protocol !== 'https:' && hostname !== '127.0.0.1' && hostname !== '[::1]') {
+      msgs.push('Siden kjører uten HTTPS. Spotify-innlogging krever HTTPS – publiser på Netlify Drop eller GitHub Pages.');
+    }
+    if (/\/index\.html?$/i.test(window.location.pathname)) {
+      msgs.push('Tips: Adressen slutter på «index.html». Åpner du siden også uten «index.html», må begge variantene registreres som Redirect URI.');
+    }
+    w.hidden = !msgs.length;
+    w.textContent = msgs.join(' ');
+  }
+
+  function renderNowPlaying() {
+    const np = nowPlaying;
+    const ls = liveState;
+    const art = $('npArt');
+    const tags = $('npTags');
+    tags.textContent = '';
+    const addTag = (text, cls) => { const s = document.createElement('span'); s.className = 'tag ' + (cls || ''); s.textContent = text; tags.appendChild(s); };
+
+    const matches = np && ls && (ls.uri === np.track.spotifyUri || ls.linkedUri === np.track.spotifyUri);
+    if (np && (!ls || matches)) {
+      $('npTitle').textContent = np.track.tittel || (ls && ls.name) || 'Ukjent';
+      $('npArtist').textContent = np.track.artist || (ls && ls.artists) || '';
+      addTag(np.mode === 'goal' ? '⚽ Mål' : '▶ Test', np.mode === 'goal' ? 'goal' : 'test');
+      addTag('Dropp fra ' + fmtMs(np.track.dropMs, true), 'drop');
+      addTag(new Date(np.at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    } else if (ls && ls.name) {
+      $('npTitle').textContent = ls.name;
+      $('npArtist').textContent = ls.artists;
+    } else {
+      $('npTitle').textContent = 'Ingenting spilles';
+      $('npArtist').textContent = tokens ? 'Trykk MÅL! for å starte' : 'Logg inn med Spotify for å starte';
+    }
+    if (ls && ls.paused && (ls.name || np)) addTag('Pauset', 'paused');
+
+    if (ls && ls.image) { art.style.backgroundImage = `url("${ls.image.replace(/"/g, '')}")`; art.textContent = ''; }
+    else { art.style.backgroundImage = ''; art.textContent = '♪'; }
+
+    const showProg = !!(ls && ls.duration);
+    $('npProg').hidden = !showProg;
+    $('npTimes').hidden = !showProg;
+    const mark = $('npDropMark');
+    if (showProg && matches && np.track.dropMs > 0) {
+      mark.hidden = false;
+      mark.style.left = Math.min(100, (np.track.dropMs / ls.duration) * 100) + '%';
+    } else mark.hidden = true;
+    updateProgress();
+    renderRound();
+  }
+
+  function updateProgress() {
+    const ls = liveState;
+    if (!ls || !ls.duration) return;
+    const pos = ls.paused ? ls.position : Math.min(ls.duration, ls.position + (performance.now() - ls.stamp));
+    $('npBar').style.width = (pos / ls.duration) * 100 + '%';
+    $('npPos').textContent = fmtMs(pos);
+    $('npDur').textContent = fmtMs(ls.duration);
+  }
+
+  function renderRound() {
+    const pool = tracks.filter((t) => !invalidIds.has(t.id));
+    const usable = pool.length ? pool : tracks;
+    const remaining = usable.filter((t) => !played.includes(t.id));
+    const count = $('roundCount');
+    if (!tracks.length) count.textContent = 'Ingen sanger';
+    else count.innerHTML = `<span>${remaining.length}</span> av ${usable.length} gjenstår`;
+    const chips = $('roundChips');
+    chips.textContent = '';
+    const currentId = nowPlaying && nowPlaying.mode === 'goal' ? nowPlaying.track.id : null;
+    // Gjenstående først, så spilte
+    const ordered = [...tracks].sort((a, b) => (played.includes(a.id) ? 1 : 0) - (played.includes(b.id) ? 1 : 0));
+    ordered.forEach((t) => {
+      const c = document.createElement('span');
+      const isPlayed = played.includes(t.id);
+      c.className = 'chip' + (isPlayed ? ' played' : '') + (invalidIds.has(t.id) ? ' bad' : '') + (t.id === currentId ? ' current' : '');
+      c.textContent = t.tittel + ' ';
+      const sm = document.createElement('small'); sm.textContent = t.artist; c.appendChild(sm);
+      c.title = isPlayed ? 'Spilt i denne runden' : invalidIds.has(t.id) ? invalidIds.get(t.id) : 'Gjenstår';
+      chips.appendChild(c);
+    });
+    $('resetRoundBtn').disabled = played.length === 0;
+  }
+
+  let editingId = null;
+
+  function renderTrackList() {
+    const ul = $('trackList');
+    ul.textContent = '';
+    $('adminSummary').textContent = `· ${tracks.length} sang${tracks.length === 1 ? '' : 'er'}`;
+    if (!tracks.length) {
+      const li = document.createElement('li'); li.className = 'empty';
+      li.textContent = 'Ingen sanger ennå. Lim inn en Spotify-lenke over, eller importer en JSON-fil.';
+      ul.appendChild(li);
+      return;
+    }
+    tracks.forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = 'trk' + (t.id === editingId ? ' editing' : '');
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = i + 1;
+      const info = document.createElement('div');
+      const tt = document.createElement('div'); tt.className = 't'; tt.textContent = t.tittel;
+      const aa = document.createElement('div'); aa.className = 'a'; aa.textContent = t.artist || '—';
+      info.append(tt, aa);
+      if (invalidIds.has(t.id)) { const w = document.createElement('div'); w.className = 'warn'; w.textContent = '⚠ ' + invalidIds.get(t.id); info.appendChild(w); }
+      const d = document.createElement('div'); d.className = 'd'; d.textContent = fmtMs(t.dropMs, true); d.title = (t.dropMs / 1000).toFixed(1) + ' sek';
+      const acts = document.createElement('div'); acts.className = 'acts';
+      acts.append(
+        mkBtn('▶ Test dropp', 'btn sm', () => { unlockAudio(); playTrack(t, 'test'); }),
+        mkBtn('✎ Rediger', 'btn sm', () => startEdit(t.id)),
+        mkBtn('🗑 Slett', 'btn sm danger', () => deleteTrack(t.id))
+      );
+      li.append(n, info, d, acts);
+      ul.appendChild(li);
+    });
+  }
+  function mkBtn(text, cls, onClick) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = text;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderAll() { renderTrackList(); renderRound(); }
+
+  /* =====================================================================
+   * Administrer sanger
+   * ===================================================================== */
+  function readForm() {
+    const tid = parseTrackId($('fLink').value);
+    const secs = parseSeconds($('fDrop').value);
+    return { tid, secs, tittel: $('fTitle').value.trim(), artist: $('fArtist').value.trim() };
+  }
+
+  function resetForm() {
+    editingId = null;
+    $('trackForm').reset();
+    $('formTitle').textContent = 'Legg til ny sang';
+    $('saveTrackBtn').textContent = '➕ Legg til sang';
+    $('cancelEditBtn').hidden = true;
+    setLinkHint('', '');
+    renderTrackList();
+  }
+
+  function startEdit(id) {
+    const t = tracks.find((x) => x.id === id);
+    if (!t) return;
+    editingId = id;
+    $('fLink').value = 'https://open.spotify.com/track/' + uriToId(t.spotifyUri);
+    $('fTitle').value = t.tittel;
+    $('fArtist').value = t.artist;
+    $('fDrop').value = (t.dropMs / 1000).toFixed(1);
+    $('formTitle').textContent = 'Rediger: ' + t.tittel;
+    $('saveTrackBtn').textContent = '💾 Lagre endringer';
+    $('cancelEditBtn').hidden = false;
+    setLinkHint('Track ID: ' + uriToId(t.spotifyUri), 'ok');
+    renderTrackList();
+    $('trackForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('fDrop').focus();
+  }
+
+  function deleteTrack(id) {
+    const t = tracks.find((x) => x.id === id);
+    if (!t || !confirm(`Slette «${t.tittel}» fra låtlisten?`)) return;
+    tracks = tracks.filter((x) => x.id !== id);
+    played = played.filter((x) => x !== id);
+    invalidIds.delete(id);
+    saveTracks(); savePlayed();
+    if (editingId === id) resetForm();
+    renderAll();
+    notify(`«${t.tittel}» er slettet.`, 'info');
+  }
+
+  function setLinkHint(text, cls) {
+    const h = $('linkHint'); h.textContent = text; h.className = 'hint' + (cls ? ' ' + cls : '');
+  }
+
+  let metaReq = 0;
+  async function onLinkChange() {
+    const raw = $('fLink').value.trim();
+    if (!raw) { setLinkHint('', ''); return; }
+    const tid = parseTrackId(raw);
+    if (!tid) { setLinkHint('Fant ingen Track ID. Lim inn en lenke som https://open.spotify.com/track/… eller spotify:track:…', 'bad'); return; }
+    setLinkHint('Track ID: ' + tid, 'ok');
+    if (!tokens) return;
+    const my = ++metaReq;
+    try {
+      const tr = await api('GET', '/tracks/' + tid + '?market=from_token');
+      if (my !== metaReq || !tr) return;
+      const artists = (tr.artists || []).map((a) => a.name).join(', ');
+      if (!$('fTitle').value.trim()) $('fTitle').value = tr.name || '';
+      if (!$('fArtist').value.trim()) $('fArtist').value = artists;
+      setLinkHint(`✓ Fant: ${tr.name} – ${artists} (${fmtMs(tr.duration_ms)})${tr.is_playable === false ? ' · ⚠ ikke tilgjengelig i ditt land' : ''}`, tr.is_playable === false ? 'bad' : 'ok');
+    } catch (e) {
+      if (my !== metaReq) return;
+      setLinkHint(e.status === 404 || e.status === 400 ? 'Fant ikke sporet hos Spotify – sjekk lenken.' : 'Track ID: ' + tid + ' (kunne ikke hente info)', e.status === 404 || e.status === 400 ? 'bad' : 'ok');
+    }
+  }
+
+  function onSubmit(ev) {
+    ev.preventDefault();
+    const f = readForm();
+    if (!f.tid) { setLinkHint('Ugyldig Spotify-lenke eller URI.', 'bad'); $('fLink').focus(); return; }
+    if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); $('fDrop').focus(); return; }
+    clearNotice('form');
+    const data = {
+      tittel: f.tittel || 'Ukjent tittel',
+      artist: f.artist,
+      spotifyUri: 'spotify:track:' + f.tid,
+      dropMs: Math.round(f.secs * 1000)
+    };
+    if (editingId) {
+      const idx = tracks.findIndex((t) => t.id === editingId);
+      if (idx >= 0) {
+        tracks[idx] = { ...tracks[idx], ...data };
+        invalidIds.delete(editingId);
+        notify(`«${data.tittel}» er oppdatert.`, 'success');
+      }
+    } else {
+      tracks.push({ id: newId(), ...data });
+      notify(`«${data.tittel}» er lagt til.`, 'success');
+    }
+    saveTracks();
+    resetForm();
+    renderAll();
+  }
+
+  function testFromForm() {
+    const f = readForm();
+    if (!f.tid) { setLinkHint('Lim inn en gyldig Spotify-lenke først.', 'bad'); return; }
+    if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); return; }
+    unlockAudio();
+    playTrack({ id: editingId || 'preview', tittel: f.tittel || 'Forhåndsvisning', artist: f.artist, spotifyUri: 'spotify:track:' + f.tid, dropMs: Math.round(f.secs * 1000) }, 'test');
+  }
+
+  async function useCurrentPosition() {
+    if (!player) { notify('Spilleren er ikke tilkoblet.', 'warn', { key: 'form' }); return; }
+    try {
+      const st = await player.getCurrentState();
+      if (!st) { notify('Ingenting spilles i nettleseren akkurat nå. Start sangen med «Test dropp» først.', 'warn', { key: 'form' }); return; }
+      $('fDrop').value = (st.position / 1000).toFixed(1);
+      const cur = st.track_window && st.track_window.current_track;
+      if (cur && !$('fLink').value.trim()) { $('fLink').value = cur.uri; onLinkChange(); }
+    } catch (e) { notify('Kunne ikke lese posisjonen: ' + e.message, 'error', { key: 'form' }); }
+  }
+
+  function exportJson() {
+    const payload = {
+      app: 'idrettshall-soundboard',
+      versjon: 1,
+      eksportert: new Date().toISOString(),
+      tracks: tracks.map(({ id, tittel, artist, spotifyUri, dropMs }) => ({ id, tittel, artist, spotifyUri, dropMs }))
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'malsanger-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    notify(`Eksporterte ${tracks.length} sanger.`, 'success');
+  }
+
+  async function importJson(file) {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const list = Array.isArray(data) ? data : (data && (data.tracks || data.sanger || data.songs));
+      if (!Array.isArray(list)) throw new Error('Fant ingen låtliste i fila.');
+      const imported = dedupeIds(list.map(normalizeTrack).filter(Boolean));
+      const skipped = list.length - imported.length;
+      if (!imported.length) throw new Error('Ingen gyldige sanger i fila.');
+      if (!confirm(`Importere ${imported.length} sanger fra «${file.name}»?\nDette erstatter dagens liste på ${tracks.length} sanger.`)) return;
+      tracks = imported;
+      played = [];
+      invalidIds.clear();
+      saveTracks(); savePlayed();
+      resetForm();
+      renderAll();
+      notify(`Importerte ${imported.length} sanger${skipped ? ` (${skipped} ugyldige ble hoppet over)` : ''}.`, 'success');
+      validateTracks();
+    } catch (e) {
+      notify('Kunne ikke importere fila: ' + (e instanceof SyntaxError ? 'ugyldig JSON.' : e.message), 'error', { key: 'import' });
+    } finally {
+      $('importFile').value = '';
+    }
+  }
+
+  /* =====================================================================
+   * Hendelser
+   * ===================================================================== */
+  function isTypingTarget(el) {
+    if (!el) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+    if (el.tagName === 'INPUT') {
+      const t = (el.type || 'text').toLowerCase();
+      return !['range', 'checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'color'].includes(t);
+    }
+    return false;
+  }
+
+  function bindEvents() {
+    $('redirectUri').textContent = REDIRECT_URI;
+    $('copyUriBtn').addEventListener('click', async () => {
+      const btn = $('copyUriBtn');
+      let ok = false;
+      try { await navigator.clipboard.writeText(REDIRECT_URI); ok = true; } catch {
+        const ta = document.createElement('textarea'); ta.value = REDIRECT_URI; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { ok = document.execCommand('copy'); } catch { ok = false; }
+        ta.remove();
+      }
+      btn.textContent = ok ? '✓ Kopiert!' : 'Marker og kopier manuelt';
+      if (!ok) { const r = document.createRange(); r.selectNodeContents($('redirectUri')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      setTimeout(() => { btn.textContent = '📋 Kopier URL'; }, 2200);
+    });
+
+    const cid = $('clientId');
+    cid.value = getClientId();
+    cid.addEventListener('input', () => {
+      const v = cid.value.trim();
+      store.set(LS.clientId, v);
+      const h = $('clientIdHint');
+      if (!v) { h.textContent = 'Lagres automatisk på denne enheten.'; h.className = 'hint'; }
+      else if (/^[0-9a-f]{32}$/i.test(v)) { h.textContent = '✓ Lagret.'; h.className = 'hint ok'; }
+      else { h.textContent = 'Client ID skal være 32 tegn (0–9, a–f).'; h.className = 'hint bad'; }
+    });
+    cid.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+    $('loginBtn').addEventListener('click', login);
+    $('logoutBtn').addEventListener('click', () => { if (confirm('Logge ut av Spotify på denne enheten?')) logout(false); });
+
+    $('goalBtn').addEventListener('click', () => { unlockAudio(); goal(); });
+    $('fadeBtn').addEventListener('click', () => { unlockAudio(); fadeOut(); });
+    $('killBtn').addEventListener('click', () => { emergencyStop(); });
+    $('unlockPill').addEventListener('click', () => { unlockAudio(); });
+    $('resetRoundBtn').addEventListener('click', () => {
+      played = []; savePlayed(); renderRound();
+      notify('Runden er nullstilt – alle sangene er tilgjengelige igjen.', 'info', { key: 'round' });
+    });
+
+    const vol = $('volume');
+    vol.value = masterVolume;
+    $('volumeVal').textContent = masterVolume + ' %';
+    vol.addEventListener('input', () => {
+      masterVolume = clampVol(vol.value);
+      $('volumeVal').textContent = masterVolume + ' %';
+      store.set(LS.volume, masterVolume);
+      if (player && !isFading) player.setVolume(masterVolume / 100).catch(() => {});
+    });
+
+    $('trackForm').addEventListener('submit', onSubmit);
+    $('fLink').addEventListener('change', onLinkChange);
+    $('fLink').addEventListener('paste', () => setTimeout(onLinkChange, 0));
+    $('testFormBtn').addEventListener('click', testFromForm);
+    $('nowPosBtn').addEventListener('click', useCurrentPosition);
+    $('cancelEditBtn').addEventListener('click', resetForm);
+    $('exportBtn').addEventListener('click', exportJson);
+    $('importBtn').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', (e) => importJson(e.target.files && e.target.files[0]));
+    $('defaultsBtn').addEventListener('click', () => {
+      if (!confirm('Erstatte hele låtlisten med de 6 eksempellåtene?')) return;
+      tracks = DEFAULT_TRACKS.map((t) => ({ ...t }));
+      played = []; invalidIds.clear();
+      saveTracks(); savePlayed(); resetForm(); renderAll();
+      validateTracks();
+    });
+
+    // Første brukerhandling: lås opp lyd + skjermlås
+    const firstInteraction = () => { unlockAudio(); requestWakeLock(); };
+    document.addEventListener('pointerdown', firstInteraction, true);
+    document.addEventListener('keydown', firstInteraction, true);
+
+    // Unngå at museklikk etterlater fokus på knapper (Space ville da «klikke» dem)
+    document.addEventListener('click', (e) => {
+      const el = e.target.closest && e.target.closest('button, summary');
+      if (el && e.detail > 0) el.blur();
+    });
+
+    // Tastatursnarveier
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Escape') { e.preventDefault(); emergencyStop(); return; }
+      if (isTypingTarget(e.target)) return;
+      const isSpace = e.code === 'Space' || e.key === ' ';
+      const k = (e.key || '').toLowerCase();
+      if (isSpace || k === 'm') {
+        e.preventDefault();
+        if (e.repeat) return;
+        const b = $('goalBtn'); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120);
+        goal();
+      } else if (k === 's') {
+        e.preventDefault();
+        if (e.repeat) return;
+        fadeOut();
+      }
+    });
+    document.addEventListener('keyup', (e) => {
+      if ((e.code === 'Space' || e.key === ' ') && !isTypingTarget(e.target)) e.preventDefault();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+        if (tokens && Date.now() > tokens.expires_at - 5 * 60 * 1000) refreshToken().catch(() => {});
+      }
+    });
+
+    setInterval(() => { if (liveState && !liveState.paused) updateProgress(); }, 250);
+  }
+
+  /* =====================================================================
+   * Oppstart
+   * ===================================================================== */
+  async function start() {
+    bindEvents();
+    renderEnvWarning();
+    renderAll();
+    renderNowPlaying();
+    setStatus('off', 'Ikke tilkoblet');
+    requestWakeLock();
+
+    await handleRedirect();
+
+    if (tokens) {
+      // Forny med en gang hvis tokenet allerede er utløpt
+      if (Date.now() > tokens.expires_at - 60 * 1000) {
+        try { await refreshToken(); } catch { /* varsel vises allerede */ }
+      } else scheduleRefresh();
+    }
+    renderAuth();
+    if (tokens) {
+      $('setupPanel').open = false;
+      initPlayer();
+      loadProfile();
+      validateTracks();
+    } else {
+      openSetup();
+      setStatus('off', 'Ikke innlogget');
+    }
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
