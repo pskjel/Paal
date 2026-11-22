@@ -3,276 +3,344 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#07090d">
+<meta name="theme-color" content="#0B0B0D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <title>KampDJ</title>
 <style>
+  /* =====================================================================
+   * KampDJ – eksklusivt tema: svart grunn, varm hvit, champagnegull
+   * ===================================================================== */
   :root {
-    --bg: #07090d;
-    --bg2: #0c1016;
-    --panel: #121822;
-    --panel2: #18202c;
-    --line: #253041;
-    --text: #f3f6fa;
-    --muted: #93a1b3;
-    --green: #22c55e;
-    --green-d: #15803d;
-    --red: #ef4444;
-    --red-d: #991b1b;
-    --amber: #f59e0b;
-    --accent: #facc15;
-    --blue: #38bdf8;
-    --tblue: #2563eb;
-    --purple: #9333ea;
-    --radius: 16px;
+    --bg: #0B0B0D;
+    --bg2: #111114;
+    --panel: #141417;
+    --panel2: #1C1C21;
+    --line: #26262B;
+    --line2: #2C2C32;
+    --text: #F4F1EA;
+    --text2: #C9C5BC;
+    --muted: #9A968E;
+    --gold: #D4B072;
+    --gold-hi: #E8CF9C;
+    --gold-ink: #0B0B0D;
+    --steel: #7EA0C9;
+    --lav: #B79AD6;
+    --crimson: #B3261E;
+    --crimson-t: #F2B8B5;
+    --crimson-line: #5A2420;
+    --ok: #5BD69B;
+    --warn: #E0A84A;
+    /* aliaser brukt av eldre kode */
+    --accent: var(--gold); --green: var(--ok); --red: var(--crimson); --amber: var(--warn);
+    --blue: var(--steel); --tblue: var(--steel); --purple: var(--lav);
+    --display: "Archivo", "Inter", system-ui, sans-serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius: 22px;
     --gutter: 16px;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; }
   body {
-    background: radial-gradient(1200px 600px at 50% -200px, #14213a 0%, var(--bg) 60%) fixed, var(--bg);
+    background: var(--bg);
     color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 17px;
-    line-height: 1.45;
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.5;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
   }
   button, input, select { font: inherit; color: inherit; }
   button { cursor: pointer; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 12px var(--gutter) 40px; }
+  svg { flex: none; }
+  .wrap { max-width: 1360px; margin: 0 auto; padding: 24px clamp(16px, 3vw, 40px) 40px; }
+  .display { font-family: var(--display); font-stretch: 125%; }
+  .mono { font-family: var(--mono); }
+  kbd {
+    font-family: var(--mono); font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+    padding: 4px 8px; border-radius: 7px; border: 1px solid var(--line2); color: var(--text2); background: transparent;
+  }
+  .eyebrow { font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 
   /* ---------- Header ---------- */
   header.top {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
-    justify-content: space-between; padding: 6px 0 14px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+    justify-content: space-between; padding: 0 0 20px; margin-bottom: 20px; border-bottom: 1px solid #222227;
   }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .brand .logo {
-    width: 42px; height: 42px; border-radius: 12px; flex: none;
-    background: linear-gradient(135deg, var(--accent), #f97316);
-    display: grid; place-items: center; font-size: 24px; color: #111;
-  }
-  .brand h1 { font-size: clamp(1.15rem, 3.2vw, 1.6rem); margin: 0; letter-spacing: .02em; text-transform: uppercase; font-weight: 900; }
-  .brand small { display: block; color: var(--muted); font-size: .8rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
-  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .brand { display: flex; align-items: center; gap: 16px; min-width: 0; flex-wrap: wrap; }
+  .brand .logo { display: flex; align-items: center; gap: 12px; }
+  .brand .word { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 1.35rem; letter-spacing: .08em; }
+  .brand .sep { width: 1px; height: 22px; background: var(--line2); }
+  .brand .tagline { font-size: .82rem; color: var(--muted); letter-spacing: .02em; }
+  .brand h1 { margin: 0; font-size: inherit; font-weight: inherit; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; margin-left: auto; }
   .pill {
-    display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
-    background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
-    font-size: .85rem; font-weight: 600; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 9px; min-height: 38px; padding: 0 14px;
+    background: var(--bg2); border: 1px solid var(--line); border-radius: 999px;
+    font-size: .82rem; font-weight: 600; white-space: nowrap; color: var(--text);
   }
-  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--red); box-shadow: 0 0 10px var(--red); flex: none; }
-  .dot.on { background: var(--green); box-shadow: 0 0 12px var(--green); }
-  .dot.wait { background: var(--amber); box-shadow: 0 0 10px var(--amber); animation: blink 1s infinite; }
+  .pill.subtle { color: var(--text2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--crimson); box-shadow: 0 0 0 4px rgba(179,38,30,.18); flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 0 4px rgba(91,214,155,.14); }
+  .dot.wait { background: var(--warn); box-shadow: 0 0 0 4px rgba(224,168,74,.16); animation: blink 1.2s infinite; }
   @keyframes blink { 50% { opacity: .35; } }
-  .pill.unlock { background: var(--amber); color: #111; border-color: var(--amber); cursor: pointer; }
+  .pill.unlock {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 45;
+    background: var(--gold); color: var(--gold-ink); border-color: var(--gold); cursor: pointer; min-height: 44px; padding: 0 18px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6);
+  }
 
   /* ---------- Tilknyttet Spotify-konto ---------- */
   .acct { position: relative; }
-  .acct-btn { cursor: pointer; padding: 4px 12px 4px 4px; min-height: 40px; }
-  .acct-btn[aria-expanded="true"] { border-color: var(--accent); }
+  .acct-btn { cursor: pointer; padding: 3px 12px 3px 3px; }
+  .acct-btn[aria-expanded="true"] { border-color: var(--gold); }
   .avatar {
     width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center;
-    background: #1db954 center/cover no-repeat; color: #04140a; font-weight: 900; font-size: .8rem;
+    background: var(--panel2) center/cover no-repeat; color: var(--gold); border: 1px solid var(--line2);
+    font-weight: 700; font-size: .72rem; letter-spacing: .04em;
   }
   .acct-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-  .acct-badge { font-size: .68rem; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 5px; background: #0b2617; color: #86efac; border: 1px solid #166534; }
-  .acct-badge.bad { background: #2a0f12; color: #fecaca; border-color: var(--red); }
+  .acct-badge { font-size: .62rem; font-weight: 800; letter-spacing: .12em; padding: 3px 7px; border-radius: 5px; background: var(--gold); color: var(--gold-ink); }
+  .acct-badge.bad { background: transparent; color: var(--crimson-t); border: 1px solid var(--crimson-line); }
   .acct-menu {
-    position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: min(320px, calc(100vw - 32px));
-    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
-    box-shadow: 0 16px 40px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 10px;
+    position: absolute; right: 0; top: calc(100% + 10px); z-index: 40; width: min(330px, calc(100vw - 32px));
+    background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.6); display: flex; flex-direction: column; gap: 12px;
   }
-  .acct-menu .who { display: flex; gap: 12px; align-items: center; }
-  .acct-menu .who .avatar { width: 48px; height: 48px; font-size: 1.1rem; }
-  .acct-menu .nm { font-weight: 800; overflow-wrap: anywhere; }
+  .acct-menu .who { display: flex; gap: 14px; align-items: center; }
+  .acct-menu .who .avatar { width: 48px; height: 48px; font-size: 1rem; }
+  .acct-menu .nm { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
   .acct-menu .em { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
   .acct-menu .btn { width: 100%; }
-  .acct-menu .tip { font-size: .8rem; color: var(--muted); }
-  @media (max-width: 520px) { .acct-name { max-width: 90px; } }
+  .acct-menu .tip { font-size: .78rem; color: var(--muted); line-height: 1.5; }
+  @media (max-width: 520px) { .acct-name { max-width: 90px; } .brand .sep, .brand .tagline { display: none; } }
 
-  /* ---------- Notices ---------- */
-  #notices { display: grid; gap: 8px; margin-bottom: 12px; }
+  /* ---------- Varsler ---------- */
+  #notices { display: grid; gap: 8px; margin-bottom: 16px; }
   .notice {
     display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px;
-    border-radius: 12px; border: 1px solid; font-weight: 600; font-size: .95rem;
-    animation: slideIn .2s ease-out;
+    border-radius: 14px; border: 1px solid var(--line); background: var(--panel);
+    font-weight: 500; font-size: .92rem; color: var(--text); animation: slideIn .2s ease-out;
   }
-  .notice.error { background: #2a0f12; border-color: var(--red); color: #ffd7d7; }
-  .notice.warn  { background: #2a1e07; border-color: var(--amber); color: #ffe9bf; }
-  .notice.info  { background: #0b2030; border-color: var(--blue); color: #d4f0ff; }
-  .notice.success { background: #0b2617; border-color: var(--green); color: #d2ffe2; }
-  .notice .ic { font-size: 1.15rem; line-height: 1.2; }
-  .notice .msg { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-  .notice button { background: none; border: 0; font-size: 1.2rem; line-height: 1; padding: 0 4px; opacity: .8; }
+  .notice .ic {
+    width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-family: var(--mono); font-size: .72rem; font-weight: 700; margin-top: 1px;
+  }
+  .notice.error { border-color: var(--crimson-line); } .notice.error .ic { background: var(--crimson); color: #fff; }
+  .notice.warn { border-color: #4A3A1E; } .notice.warn .ic { background: var(--warn); color: var(--gold-ink); }
+  .notice.info .ic { background: var(--panel2); color: var(--steel); border: 1px solid var(--line2); }
+  .notice.success { border-color: #4A3F2A; } .notice.success .ic { background: var(--gold); color: var(--gold-ink); }
+  .notice .msg { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
+  .notice button { background: none; border: 0; font-size: 1rem; line-height: 1; padding: 4px 6px; color: var(--muted); border-radius: 6px; }
+  .notice button:hover { color: var(--text); }
   @keyframes slideIn { from { transform: translateY(-6px); opacity: 0; } }
 
-  /* ---------- Panels ---------- */
+  /* ---------- Paneler ---------- */
   details.panel {
     background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-    margin-bottom: 14px; overflow: hidden;
+    margin-bottom: 16px; overflow: hidden;
   }
   details.panel > summary {
-    list-style: none; cursor: pointer; padding: 14px 18px; font-weight: 800;
-    display: flex; align-items: center; gap: 10px; font-size: 1.05rem; user-select: none;
+    list-style: none; cursor: pointer; padding: 18px 22px; font-weight: 700;
+    display: flex; align-items: center; gap: 12px; font-size: 1rem; user-select: none; letter-spacing: .01em;
   }
   details.panel > summary::-webkit-details-marker { display: none; }
-  details.panel > summary::after { content: "▾"; margin-left: auto; transition: transform .2s; color: var(--muted); }
-  details.panel:not([open]) > summary::after { transform: rotate(-90deg); }
-  details.panel > summary .sum-extra { color: var(--muted); font-weight: 600; font-size: .85rem; }
-  .panel-body { padding: 4px 18px 18px; border-top: 1px solid var(--line); }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
-  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
-  h3 { font-size: .95rem; margin: 18px 0 8px; }
-  .section { margin-top: 18px; padding-top: 4px; border-top: 1px solid var(--line); }
-
-  label.lbl { display: block; font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; }
-  input[type=text], input[type=url], input[type=number], input:not([type]), select {
-    width: 100%; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--line);
-    border-radius: 10px; font-size: 1rem; min-height: 48px;
+  details.panel > summary::after {
+    content: ""; margin-left: auto; width: 8px; height: 8px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .2s;
   }
-  input:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  details.panel:not([open]) > summary::after { transform: rotate(-45deg); }
+  details.panel > summary .sum-extra { color: var(--muted); font-weight: 500; font-size: .82rem; }
+  .sum-ic { color: var(--gold); display: inline-flex; }
+  .panel-body { padding: 6px 22px 22px; border-top: 1px solid var(--line); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+  h2 { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .18em; color: var(--muted); margin: 0 0 16px; }
+  h3 { font-size: .95rem; font-weight: 700; margin: 22px 0 10px; letter-spacing: .01em; }
+  .section { margin-top: 22px; padding-top: 4px; border-top: 1px solid var(--line); }
+
+  label.lbl { display: block; font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; margin: 16px 0 8px; }
+  input[type=text], input[type=url], input[type=number], input:not([type]), select {
+    width: 100%; padding: 12px 14px; background: var(--bg); border: 1px solid var(--line);
+    border-radius: 12px; font-size: .98rem; min-height: 48px; color: var(--text);
+  }
+  input::placeholder { color: #6E6B64; }
+  input:focus, select:focus { outline: none; border-color: var(--gold); }
+  input:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row > .grow { flex: 1 1 220px; min-width: 0; }
   .uri-box { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
   .uri-box code {
-    flex: 1 1 260px; min-width: 0; display: block; padding: 12px 14px; background: #000; border: 1px dashed var(--accent);
-    border-radius: 10px; color: var(--accent); font-size: 1rem; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    flex: 1 1 260px; min-width: 0; display: flex; align-items: center; padding: 12px 14px; background: var(--bg);
+    border: 1px solid #4A3F2A; border-radius: 12px; color: var(--gold); font-size: .92rem; overflow-wrap: anywhere; font-family: var(--mono);
   }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    min-height: 48px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--line);
-    background: var(--panel2); font-weight: 700; font-size: .98rem; transition: transform .06s, filter .15s, background .15s;
+    min-height: 46px; padding: 10px 18px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--panel2); color: var(--text); font-weight: 600; font-size: .92rem;
+    transition: transform .06s, background .15s, border-color .15s, color .15s;
   }
-  .btn:hover { filter: brightness(1.15); }
-  .btn:active { transform: scale(.97); }
-  .btn[disabled] { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
-  .btn.primary { background: var(--green); border-color: var(--green); color: #04140a; }
-  .btn.spotify { background: #1db954; border-color: #1db954; color: #04140a; }
-  .btn.danger { background: transparent; border-color: var(--red); color: #ffb4b4; }
+  .btn:hover { border-color: var(--line2); background: #222228; }
+  .btn:active { transform: scale(.98); }
+  .btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn.primary { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+  .btn.primary:hover { background: var(--gold-hi); border-color: var(--gold-hi); }
+  .btn.spotify { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+  .btn.spotify:hover { background: var(--gold-hi); border-color: var(--gold-hi); }
+  .btn.danger { background: transparent; border-color: var(--crimson-line); color: var(--crimson-t); }
+  .btn.danger:hover { border-color: var(--crimson); background: rgba(179,38,30,.1); }
   .btn.ghost { background: transparent; }
-  .btn.sm { min-height: 40px; padding: 6px 12px; font-size: .88rem; border-radius: 10px; }
+  .btn.sm { min-height: 40px; padding: 6px 12px; font-size: .84rem; border-radius: 10px; }
   .muted { color: var(--muted); }
-  .small { font-size: .88rem; }
-  ol.steps { margin: 8px 0 0; padding-left: 22px; color: var(--muted); font-size: .92rem; }
-  ol.steps li { margin: 4px 0; }
-  ol.steps b { color: var(--text); }
-  a { color: var(--blue); }
-  .warnbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #2a1e07; border: 1px solid var(--amber); color: #ffe9bf; font-size: .9rem; font-weight: 600; }
-  .okbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #0b2617; border: 1px solid var(--green); color: #d2ffe2; font-size: .92rem; font-weight: 600; }
+  .small { font-size: .86rem; }
+  ol.steps { margin: 8px 0 0; padding-left: 22px; color: var(--muted); font-size: .9rem; line-height: 1.6; }
+  ol.steps li { margin: 6px 0; }
+  ol.steps li::marker { color: var(--gold); font-family: var(--mono); font-size: .8rem; }
+  ol.steps b { color: var(--text); font-weight: 600; }
+  ol.steps code { font-family: var(--mono); color: var(--text2); }
+  a { color: var(--gold); } a:hover { color: var(--gold-hi); }
+  .warnbox { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(224,168,74,.07); border: 1px solid #4A3A1E; color: #F1D9AE; font-size: .88rem; }
+  .okbox { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: rgba(212,176,114,.06); border: 1px solid #4A3F2A; color: var(--text); font-size: .88rem; }
 
-  /* ---------- Segment-faner (kategorier) ---------- */
-  .seg { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; }
+  /* ---------- Segmentkontroll (kategorier) ---------- */
+  .seg {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; margin: 12px 0 4px;
+    border-radius: 14px; background: var(--bg); border: 1px solid #222227;
+  }
   .seg button {
-    flex: 1 1 auto; min-height: 44px; padding: 8px 14px; border-radius: 10px;
-    border: 1px solid var(--line); background: var(--bg2); font-weight: 800; font-size: .92rem;
+    min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 0;
+    background: transparent; color: var(--muted); font-weight: 600; font-size: .86rem;
   }
-  .seg button .c { opacity: .7; font-weight: 700; margin-left: 4px; }
-  .seg button[aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
-  .seg button[aria-pressed="true"] .c { opacity: .8; }
+  .seg button:hover { color: var(--text); }
+  .seg button .c { font-weight: 500; margin-left: 4px; opacity: .8; }
+  .seg button[aria-pressed="true"] { background: var(--line); color: var(--text); font-weight: 700; }
 
-  /* ---------- Main control grid ---------- */
-  .grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); margin-bottom: 14px; }
-  @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
-  .controls { display: flex; flex-direction: column; gap: 14px; }
+  /* ---------- Hovedkontroller ---------- */
+  .grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-bottom: 24px; }
+  .grid > .controls:first-child { flex: 1 1 600px; }
+  .grid > .controls:last-child { flex: 1 1 380px; }
+  .controls { min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 
-  .bigbtn { position: relative; overflow: hidden; }
+  .bigbtn { position: relative; overflow: hidden; text-align: left; }
   .bigbtn.flash::after {
-    content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash .6s ease-out; pointer-events: none;
+    content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash .55s ease-out; pointer-events: none;
   }
-  @keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
-  .bigbtn.busy { filter: saturate(.6) brightness(.9); }
+  @keyframes flash { 0% { opacity: .55; } 100% { opacity: 0; } }
+  .bigbtn.busy { filter: saturate(.7) brightness(.92); }
 
   #goalBtn {
-    width: 100%; min-height: clamp(170px, 30vh, 290px);
-    border: 0; border-radius: 24px; color: #031407;
-    background: radial-gradient(circle at 50% 30%, #4ade80, var(--green) 45%, var(--green-d));
-    box-shadow: 0 10px 0 #0c5a2a, 0 18px 40px rgba(34,197,94,.35), inset 0 2px 0 rgba(255,255,255,.35);
-    font-size: clamp(3.2rem, 11vw, 7.5rem); font-weight: 900; letter-spacing: .04em;
-    text-shadow: 0 2px 0 rgba(255,255,255,.35);
-    transition: transform .06s, box-shadow .06s, filter .2s;
+    width: 100%; min-height: clamp(240px, 36vh, 340px); border: 0; border-radius: 28px;
+    background: var(--gold); color: var(--gold-ink); padding: clamp(22px, 3vw, 30px) clamp(22px, 3vw, 34px);
+    display: flex; flex-direction: column; justify-content: space-between; gap: 12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 30px 60px -30px rgba(212,176,114,.55);
+    transition: transform .08s, box-shadow .08s, filter .2s, background .15s;
   }
-  #goalBtn .sub { display: block; font-size: clamp(.8rem, 1.6vw, 1rem); letter-spacing: .14em; font-weight: 800; opacity: .7; text-shadow: none; }
-  #goalBtn:active, #goalBtn.pressed { transform: translateY(8px); box-shadow: 0 2px 0 #0c5a2a, 0 8px 20px rgba(34,197,94,.3), inset 0 2px 0 rgba(255,255,255,.3); }
+  #goalBtn:hover { background: #DABA80; }
+  #goalBtn:active, #goalBtn.pressed { transform: scale(.985); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 14px 30px -20px rgba(212,176,114,.5); }
+  .gb-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; }
+  .gb-row.bottom { align-items: flex-end; font-size: .92rem; font-weight: 600; }
+  .gb-row kbd { border: 0; background: rgba(11,11,13,.12); color: var(--gold-ink); }
+  .gb-row .eyebrow { color: var(--gold-ink); }
+  .gb-keys { display: inline-flex; gap: 6px; }
+  .gb-word { font-family: var(--display); font-stretch: 125%; font-weight: 900; font-size: clamp(5rem, 13vw, 10.5rem); line-height: .82; letter-spacing: -.01em; }
+  #goalCount { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
 
-  .cat-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .cat-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .catbtn {
-    min-height: 100px; border: 0; border-radius: 18px; color: #fff;
-    font-size: clamp(1.4rem, 3.8vw, 2.1rem); font-weight: 900; letter-spacing: .03em;
-    transition: transform .06s, box-shadow .06s, filter .2s;
+    min-height: 150px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    padding: 22px 24px; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+    transition: transform .08s, border-color .15s, background .15s;
   }
-  .catbtn .sub { display: block; font-size: .78rem; letter-spacing: .12em; opacity: .85; font-weight: 800; }
-  .catbtn.timeout { background: radial-gradient(circle at 50% 30%, #60a5fa, var(--tblue) 55%, #1e3a8a); box-shadow: 0 7px 0 #172554, 0 12px 26px rgba(37,99,235,.3), inset 0 2px 0 rgba(255,255,255,.25); }
-  .catbtn.pause { background: radial-gradient(circle at 50% 30%, #c084fc, var(--purple) 55%, #581c87); box-shadow: 0 7px 0 #3b0764, 0 12px 26px rgba(147,51,234,.3), inset 0 2px 0 rgba(255,255,255,.25); }
-  .catbtn:active, .catbtn.pressed { transform: translateY(6px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+  .catbtn:hover { background: #18181C; }
+  .catbtn.timeout:hover { border-color: #3A4B61; }
+  .catbtn.pause:hover { border-color: #4D4160; }
+  .catbtn:active, .catbtn.pressed { transform: scale(.985); }
+  .catbtn .cb-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+  .catbtn .cb-word { display: block; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(1.35rem, 2.6vw, 1.9rem); letter-spacing: .02em; line-height: 1.1; }
+  .catbtn .sub { display: block; margin-top: 4px; font-size: .82rem; color: var(--muted); }
+  .catbtn.timeout .ic { color: var(--steel); } .catbtn.timeout .sub b { color: var(--steel); }
+  .catbtn.pause .ic { color: var(--lav); } .catbtn.pause .sub b { color: var(--lav); }
 
-  .stop-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .stop-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; }
   #fadeBtn {
-    width: 100%; min-height: 100px; border: 0; border-radius: 20px; color: #fff;
-    background: radial-gradient(circle at 50% 30%, #f87171, var(--red) 50%, var(--red-d));
-    box-shadow: 0 8px 0 #6b1111, 0 14px 30px rgba(239,68,68,.3), inset 0 2px 0 rgba(255,255,255,.3);
-    font-size: clamp(1.6rem, 4.6vw, 2.6rem); font-weight: 900; letter-spacing: .03em;
-    transition: transform .06s, box-shadow .06s;
+    min-height: 116px; border: 0; border-radius: var(--radius); background: var(--crimson); color: #fff;
+    padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    transition: transform .08s, filter .15s;
   }
-  #fadeBtn:active { transform: translateY(6px); box-shadow: 0 2px 0 #6b1111; }
+  #fadeBtn:hover { filter: brightness(1.08); }
+  #fadeBtn:active { transform: scale(.985); }
   #fadeBtn.fading { animation: pulse .5s infinite alternate; }
-  @keyframes pulse { to { filter: brightness(1.35); } }
-  #fadeBtn .sub { display: block; font-size: .8rem; letter-spacing: .14em; opacity: .8; font-weight: 800; }
-  .stop2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: stretch; }
-  @media (max-width: 520px) { .stop2 { grid-template-columns: minmax(0, 1fr); } }
+  @keyframes pulse { to { filter: brightness(1.3); } }
+  #fadeBtn .fb-word { display: block; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: .02em; line-height: 1.1; }
+  #fadeBtn .sub { display: block; margin-top: 4px; font-size: .82rem; font-weight: 600; color: #FFE1DE; }
+  #fadeBtn kbd { border: 0; background: rgba(0,0,0,.22); color: #fff; }
   #killBtn {
-    min-height: 64px; border-radius: 14px; border: 2px solid var(--red); background: #1d0b0d; color: #ffc9c9;
-    font-weight: 900; font-size: 1.02rem;
+    min-height: 116px; border-radius: var(--radius); border: 1.5px solid var(--crimson); background: transparent; color: var(--crimson-t);
+    padding: 20px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left;
+    transition: background .15s, transform .08s;
   }
-  #killBtn:active { transform: scale(.97); background: var(--red-d); }
-  .vol { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-  .vol .vtop { display: flex; justify-content: space-between; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-  .vol .vtop b { color: var(--text); font-size: 1rem; }
-  input[type=range] { width: 100%; height: 36px; accent-color: var(--accent); }
+  #killBtn:hover { background: rgba(179,38,30,.08); }
+  #killBtn:active { transform: scale(.985); background: rgba(179,38,30,.2); }
+  #killBtn .kb-word { display: block; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+  #killBtn .sub { display: block; margin-top: 4px; font-size: .82rem; }
+  #killBtn kbd { border-color: var(--crimson-line); color: var(--crimson-t); }
+  @media (max-width: 560px) { .stop-row, .cat-row { grid-template-columns: minmax(0, 1fr); } }
 
-  /* ---------- Now playing ---------- */
-  .np { display: flex; gap: 16px; align-items: center; }
+  .vol { display: flex; align-items: center; gap: 20px; padding: 16px 22px; border-radius: 18px; border: 1px solid var(--line); background: var(--bg2); flex-wrap: wrap; }
+  .vol label { font-size: .68rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .vol input[type=range] { flex: 1 1 220px; min-width: 0; }
+  .vol b { font-family: var(--mono); font-size: .95rem; min-width: 56px; text-align: right; }
+  input[type=range] { height: 32px; accent-color: var(--gold); margin: 0; }
+
+  /* ---------- Spiller nå ---------- */
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .card-head h2 { margin: 0; }
+  .np { display: flex; gap: 18px; align-items: center; }
   .np .art {
-    width: 96px; height: 96px; border-radius: 12px; background: var(--bg2) center/cover no-repeat; flex: none;
-    border: 1px solid var(--line); display: grid; place-items: center; font-size: 40px; color: var(--muted);
+    width: 104px; height: 104px; border-radius: 16px; background: var(--panel2) center/cover no-repeat; flex: none;
+    border: 1px solid var(--line2); display: grid; place-items: center; color: #5E5B55;
   }
   .np .meta { min-width: 0; flex: 1; }
-  .np .title { font-size: clamp(1.25rem, 3vw, 1.7rem); font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
-  .np .artist { color: var(--muted); font-weight: 600; margin-top: 2px; overflow-wrap: anywhere; }
-  .np .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .tag { font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line); text-transform: uppercase; letter-spacing: .05em; }
-  .tag.mal { background: var(--green); color: #04140a; border-color: var(--green); }
-  .tag.timeout { background: var(--tblue); color: #fff; border-color: var(--tblue); }
-  .tag.pause { background: var(--purple); color: #fff; border-color: var(--purple); }
-  .tag.test { background: var(--blue); color: #021018; border-color: var(--blue); }
-  .tag.drop { background: #2b2408; color: var(--accent); border-color: #5c4d0f; }
-  .tag.paused { background: #2a1e07; color: var(--amber); border-color: #5c430f; }
-  .tag.auto { background: #2a0f12; color: #fecaca; border-color: var(--red); }
-  .prog { margin-top: 14px; height: 8px; background: var(--bg2); border-radius: 99px; overflow: hidden; position: relative; }
-  .prog > i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--accent), #f97316); border-radius: 99px; }
-  .prog > b { position: absolute; top: -3px; bottom: -3px; width: 3px; background: #fff; border-radius: 2px; opacity: .8; }
-  .times { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .np .title { font-family: var(--display); font-stretch: 112%; font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 800; line-height: 1.08; overflow-wrap: anywhere; }
+  .np .artist { color: var(--muted); font-size: .95rem; margin-top: 4px; overflow-wrap: anywhere; }
+  .np .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .tag { font-family: var(--mono); font-size: .72rem; font-weight: 500; padding: 4px 9px; border-radius: 7px; border: 1px solid var(--line2); color: var(--text2); background: transparent; }
+  .tag.mal, .tag.timeout, .tag.pause, .tag.test { font-family: var(--sans); font-size: .66rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; border: 0; padding: 5px 9px; }
+  .tag.mal { background: var(--gold); color: var(--gold-ink); }
+  .tag.timeout { background: var(--steel); color: var(--gold-ink); }
+  .tag.pause { background: var(--lav); color: var(--gold-ink); }
+  .tag.test { background: var(--panel2); color: var(--text); border: 1px solid var(--line2); }
+  .tag.drop { color: var(--gold); border-color: #4A3F2A; }
+  .tag.paused { color: var(--warn); border-color: #4A3A1E; }
+  .tag.auto { font-family: var(--sans); font-weight: 700; color: var(--crimson-t); border-color: var(--crimson-line); border-radius: 999px; padding: 4px 11px; }
+  .prog { margin-top: 22px; height: 4px; background: var(--line); border-radius: 4px; position: relative; }
+  .prog > i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); border-radius: 4px; }
+  .prog > b { position: absolute; top: -5px; width: 2px; height: 14px; background: var(--text); border-radius: 2px; }
+  .times { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .76rem; color: var(--muted); margin-top: 10px; }
 
-  /* ---------- Round ---------- */
-  .round-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
-  .count { font-size: 1.35rem; font-weight: 900; }
-  .count span { color: var(--accent); }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 260px; overflow-y: auto; }
+  /* ---------- Runde ---------- */
+  .round-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 18px 0 12px; }
+  .count { font-size: .95rem; color: var(--text2); display: flex; align-items: baseline; gap: 10px; }
+  .count span { font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: 3.2rem; line-height: 1; color: var(--gold); }
+  .chips { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; }
   .chip {
-    padding: 8px 12px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
-    font-weight: 700; font-size: .9rem; max-width: 100%; overflow-wrap: anywhere;
+    display: flex; align-items: baseline; gap: 10px; padding: 9px 12px; border-radius: 12px;
+    font-weight: 600; font-size: .88rem; overflow-wrap: anywhere;
   }
-  .chip small { color: var(--muted); font-weight: 600; }
-  .chip.played { opacity: .38; text-decoration: line-through; }
-  .chip.bad { border-color: var(--amber); }
-  .chip.current { border-color: var(--green); box-shadow: 0 0 0 2px rgba(34,197,94,.35); opacity: 1; text-decoration: none; }
+  .chip small { color: var(--muted); font-weight: 400; font-size: .78rem; }
+  .chip.played { opacity: .4; text-decoration: line-through; }
+  .chip.bad { color: var(--warn); }
+  .chip.current { background: #1E1D1A; box-shadow: inset 0 0 0 1px #4A3F2A; opacity: 1; text-decoration: none; }
 
-  /* ---------- Admin ---------- */
-  .set-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 12px; }
+  /* ---------- Administrer ---------- */
+  .set-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 14px; }
   @media (max-width: 700px) { .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .chk { display: flex; gap: 10px; align-items: center; margin-top: 12px; font-weight: 600; font-size: .95rem; }
-  .chk input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
-  .form-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 12px; }
+  .chk { display: flex; gap: 12px; align-items: center; margin-top: 14px; font-size: .92rem; color: var(--text2); }
+  .chk input { width: 20px; height: 20px; accent-color: var(--gold); flex: none; }
+  .form-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 14px; }
   .f-link { grid-column: span 12; }
   .f-title { grid-column: span 4; }
   .f-artist { grid-column: span 3; }
@@ -282,73 +350,82 @@
   @media (max-width: 560px) { .f-title, .f-artist, .f-cat, .f-drop { grid-column: span 12; } }
   .drop-wrap { display: flex; gap: 8px; }
   .drop-wrap input { flex: 1; min-width: 0; }
-  .hint { font-size: .82rem; color: var(--muted); margin-top: 6px; min-height: 1.1em; }
-  .hint.ok { color: #86efac; }
-  .hint.bad { color: #fca5a5; }
-  .tracklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .hint { font-size: .8rem; color: var(--muted); margin-top: 8px; min-height: 1.1em; line-height: 1.5; }
+  .hint.ok { color: #B9DCC6; }
+  .hint.bad { color: var(--crimson-t); }
+  .tracklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .trk {
-    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
-    padding: 10px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px;
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto auto; gap: 14px; align-items: center;
+    padding: 10px 14px; background: var(--bg); border: 1px solid #1E1E23; border-radius: 14px;
   }
-  .trk.editing { border-color: var(--accent); }
-  .trk .n { color: var(--muted); font-weight: 800; text-align: center; }
-  .trk .t { font-weight: 800; overflow-wrap: anywhere; }
-  .trk .a { color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
-  .trk .warn { color: var(--amber); font-size: .8rem; font-weight: 700; }
-  .trk .d { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--accent); white-space: nowrap; }
+  .trk.editing { border-color: var(--gold); }
+  .trk .n { font-family: var(--mono); font-size: .78rem; color: #6E6B64; text-align: center; }
+  .trk .t { font-weight: 600; overflow-wrap: anywhere; }
+  .trk .a { color: var(--muted); font-size: .84rem; overflow-wrap: anywhere; }
+  .trk .warn { color: var(--warn); font-size: .78rem; font-weight: 600; }
+  .trk .d { font-family: var(--mono); font-size: .86rem; color: var(--gold); white-space: nowrap; }
   .trk .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   @media (max-width: 640px) {
     .trk { grid-template-columns: 28px minmax(0, 1fr) auto; }
     .trk .acts { grid-column: 1 / -1; justify-content: stretch; }
     .trk .acts .btn { flex: 1; }
   }
-  .io-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
-  .empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+  .io-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .empty { padding: 22px; text-align: center; color: var(--muted); border: 1px dashed var(--line2); border-radius: 14px; }
 
   /* ---------- Dropp-finner ---------- */
   body.finder-open { overflow: hidden; }
   .overlay {
-    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.75);
+    position: fixed; inset: 0; z-index: 50; background: rgba(5,5,6,.82); backdrop-filter: blur(6px);
     display: grid; place-items: center; padding: 16px; overflow-y: auto;
   }
   .finder {
-    width: min(720px, 100%); background: var(--panel); border: 2px solid var(--accent);
-    border-radius: 20px; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
-    display: flex; flex-direction: column; gap: 12px;
+    width: min(720px, 100%); background: var(--panel); border: 1px solid #4A3F2A;
+    border-radius: 26px; padding: 24px; box-shadow: 0 30px 80px rgba(0,0,0,.7);
+    display: flex; flex-direction: column; gap: 14px;
   }
   .fn-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .fn-head h2 { margin: 0; color: var(--accent); }
-  .fn-title { font-size: clamp(1.3rem, 4vw, 1.9rem); font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
-  .fn-artist { color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
-  .fn-pos { font-size: clamp(2.6rem, 10vw, 4.6rem); font-weight: 900; font-variant-numeric: tabular-nums; text-align: center; color: var(--accent); line-height: 1; }
-  .fn-pos small { font-size: 1rem; color: var(--muted); font-weight: 700; }
-  .fn-saved { text-align: center; font-weight: 700; }
+  .fn-head h2 { margin: 0; color: var(--gold); }
+  .fn-title { font-family: var(--display); font-stretch: 112%; font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+  .fn-artist { color: var(--muted); overflow-wrap: anywhere; }
+  .fn-pos { font-family: var(--mono); font-size: clamp(2.6rem, 10vw, 4.4rem); font-weight: 700; text-align: center; color: var(--gold); line-height: 1; }
+  .fn-pos small { font-size: 1rem; color: var(--muted); font-weight: 500; }
+  .fn-saved { text-align: center; font-weight: 600; color: var(--text2); }
   .fn-seek { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-  .fn-seek .btn { padding: 8px 4px; }
+  .fn-seek .btn { padding: 8px 4px; font-family: var(--mono); }
   .fn-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .fn-nav .btn { padding: 8px 6px; font-size: .9rem; }
+  .fn-nav .btn { padding: 8px 6px; font-size: .86rem; }
   #fnMark {
-    width: 100%; min-height: 96px; border: 0; border-radius: 18px; color: #1a1200;
-    background: radial-gradient(circle at 50% 30%, #fde68a, var(--accent) 50%, #ca8a04);
-    box-shadow: 0 7px 0 #854d0e; font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 900; letter-spacing: .03em;
+    width: 100%; min-height: 96px; border: 0; border-radius: 20px; color: var(--gold-ink); background: var(--gold);
+    font-family: var(--display); font-stretch: 125%; font-size: clamp(1.5rem, 5vw, 2.2rem); font-weight: 800; letter-spacing: .03em;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35); transition: transform .08s;
   }
-  #fnMark:active { transform: translateY(5px); box-shadow: 0 2px 0 #854d0e; }
-  #fnMark .sub { display: block; font-size: .78rem; letter-spacing: .12em; opacity: .75; }
-  .fn-last { min-height: 1.3em; text-align: center; color: #86efac; font-weight: 700; font-size: .92rem; }
+  #fnMark:active { transform: scale(.985); }
+  #fnMark .sub { display: block; font-family: var(--sans); font-size: .7rem; letter-spacing: .16em; opacity: .75; font-weight: 700; margin-top: 4px; }
+  .fn-last { min-height: 1.3em; text-align: center; color: var(--gold); font-weight: 600; font-size: .9rem; }
 
   /* ---------- Innloggingsskjerm ---------- */
   body.locked .app-only { display: none !important; }
   .gate { display: none; }
-  body.locked .gate { display: block; }
-  .gate .card { text-align: center; padding: clamp(24px, 6vw, 48px) 18px; margin-bottom: 14px; }
-  .gate .big-logo { font-size: 64px; line-height: 1; }
-  .gate h2 { color: var(--text); font-size: clamp(1.6rem, 5vw, 2.4rem); text-transform: none; letter-spacing: 0; margin: 12px 0 6px; }
-  .gate p { color: var(--muted); margin: 0 auto 20px; max-width: 520px; }
-  .gate .btn.spotify { min-height: 60px; font-size: 1.15rem; padding: 12px 28px; }
-  .gate .deny { max-width: 560px; margin: 18px auto 0; text-align: left; }
+  body.locked .gate { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 28px; overflow: hidden; margin-bottom: 16px; }
+  .gate-hero { flex: 1 1 520px; min-width: 0; padding: clamp(28px, 5vw, 56px); display: flex; flex-direction: column; justify-content: space-between; gap: 40px; border-right: 1px solid #1C1C21; }
+  .gate-hero .eyebrow { color: var(--gold); margin: 0 0 18px; }
+  .gate-hero h2 { margin: 0; font-family: var(--display); font-stretch: 125%; font-weight: 800; font-size: clamp(2.6rem, 6vw, 4.8rem); line-height: .95; letter-spacing: -.01em; color: var(--text); text-transform: none; max-width: 700px; }
+  .gate-hero p { margin: 22px 0 0; font-size: 1.08rem; line-height: 1.6; color: #B5B1A8; max-width: 520px; }
+  .gate-points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 22px; }
+  .gate-points li { padding-top: 14px; border-top: 1px solid var(--line2); font-size: .88rem; line-height: 1.5; color: var(--text2); }
+  .gate-points li span { display: block; font-family: var(--mono); font-size: .74rem; color: var(--gold); margin-bottom: 8px; }
+  .gate-card { flex: 1 1 400px; min-width: 0; padding: clamp(28px, 5vw, 56px) clamp(22px, 4vw, 48px); background: #0F0F12; display: flex; align-items: center; justify-content: center; }
+  .gate-card .inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 18px; }
+  .gate-card h3 { margin: 0; font-family: var(--display); font-stretch: 112%; font-weight: 800; font-size: 2rem; line-height: 1.1; }
+  .gate-card p { margin: 0; font-size: .95rem; line-height: 1.6; color: #B5B1A8; }
+  .gate .btn.spotify { min-height: 60px; font-size: 1rem; font-weight: 700; border-radius: 16px; width: 100%; }
+  .gate .deny { margin: 0; }
+  .gate-note { display: flex; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); font-size: .84rem; line-height: 1.55; color: #B5B1A8; }
+  .gate-note svg { margin-top: 2px; color: var(--muted); }
 
-  footer { margin-top: 18px; color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; }
-  kbd { background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 1px 7px; font-family: inherit; font-weight: 800; color: var(--text); font-size: .82rem; }
+  footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #222227; color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  footer kbd { margin-right: 6px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -357,13 +434,14 @@
 
   <header class="top">
     <div class="brand">
-      <div class="logo" aria-hidden="true">⚽</div>
-      <h1>KampDJ <small>Kampmusikk for idrettshallen</small></h1>
+      <h1 class="logo"><span style="color:var(--gold);display:inline-flex"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="1" y="1" width="28" height="28" rx="8" fill="none" stroke="currentColor" stroke-width="1.5"></rect><path d="M10 9v12M10 15l7-6M10 15l7 6M20 9v12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span><span class="word">KAMPDJ</span></h1>
+      <span class="sep" aria-hidden="true"></span>
+      <span class="tagline">Kampmusikk for idrettshallen</span>
     </div>
     <div class="pills">
+      <button class="pill unlock" id="unlockPill" hidden>Klikk for å aktivere lyd</button>
       <span class="pill" id="statusPill" title="Tilkobling til Spotify"><span class="dot" id="statusDot"></span><span id="statusText">Ikke tilkoblet</span></span>
-      <span class="pill" id="wakePill" title="Hindrer at skjermen slår seg av">🔆 <span id="wakeText">Skjermlås: …</span></span>
-      <button class="pill unlock" id="unlockPill" hidden>🔊 Klikk for å aktivere lyd</button>
+      <span class="pill subtle" id="wakePill" title="Hindrer at skjermen slår seg av"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg><span id="wakeText">Skjermlås: …</span></span>
       <div class="acct" id="acct" hidden>
         <button class="pill acct-btn" id="acctBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu" title="Tilknyttet Spotify-konto">
           <span class="avatar" id="acctAvatar" aria-hidden="true"></span>
@@ -380,7 +458,7 @@
             </div>
           </div>
           <div class="okbox" id="acctMenuPlan" style="margin:0"></div>
-          <button class="btn" id="acctSwitch" type="button">🔄 Bytt bruker</button>
+          <button class="btn" id="acctSwitch" type="button">Bytt bruker</button>
           <button class="btn danger" id="acctLogout" type="button">Logg ut</button>
           <div class="tip">Delt PC? Logg også ut av Spotify i nettleseren, ellers kan neste person bli logget rett inn med denne kontoen: <a href="https://accounts.spotify.com/logout" target="_blank" rel="noopener">logg ut av spotify.com</a>.</div>
         </div>
@@ -392,26 +470,44 @@
 
   <!-- ===== Innlogging (vises til brukeren er logget inn og godkjent) ===== -->
   <section class="gate" id="gate">
-    <div class="card">
-      <div class="big-logo" aria-hidden="true">⚽🎵</div>
-      <h2>Velkommen til KampDJ</h2>
-      <p id="gateText">Logg inn med Spotify-kontoen din for å bruke kampmusikken. Bare kontoer som er godkjent av klubbens administrator får tilgang.</p>
-      <div class="row" style="justify-content:center">
-        <button class="btn spotify" id="gateLoginBtn" type="button">Logg inn med Spotify</button>
-        <button class="btn danger" id="gateLogoutBtn" type="button" hidden>Logg inn med en annen konto</button>
+    <div class="gate-hero">
+      <div>
+        <p class="eyebrow">For klubber og idrettslag</p>
+        <h2>Kampmusikk med ett trykk.</h2>
+        <p>Riktig låt, rett på droppet – og ute av lufta før dommeren blåser i gang igjen.</p>
       </div>
-      <div class="warnbox deny" id="gateDeny" hidden></div>
+      <ol class="gate-points">
+        <li><span>01</span>Mål, timeout og pause – hver med egen runde uten repetisjon</li>
+        <li><span>02</span>Starter på droppet og stopper av seg selv etter 5 sekunder</li>
+        <li><span>03</span>Spiller fra PC-en, eller styres fra iPad ved sidelinjen</li>
+      </ol>
+    </div>
+    <div class="gate-card">
+      <div class="inner">
+        <div>
+          <p class="eyebrow" style="margin:0 0 10px">Logg inn</p>
+          <h3>Velkommen til hallen</h3>
+        </div>
+        <p id="gateText">Logg inn med Spotify-kontoen din for å bruke kampmusikken. Bare kontoer som er godkjent av klubbens administrator får tilgang.</p>
+        <button class="btn spotify" id="gateLoginBtn" type="button">Logg inn med Spotify <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+        <button class="btn danger" id="gateLogoutBtn" type="button" hidden>Logg inn med en annen konto</button>
+        <div class="warnbox deny" id="gateDeny" hidden></div>
+        <div class="gate-note">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+          <span>Musikken krever Spotify Premium. Ingen tilgang? Be administrator legge e-posten til Spotify-kontoen din inn under <b style="color:var(--text);font-weight:600">User Management</b> i Spotify Dashboard.</span>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- ===== Spotify Oppsett ===== -->
   <details class="panel" id="setupPanel">
-    <summary>⚙️ Spotify Oppsett <span class="sum-extra" id="setupSummary"></span></summary>
+    <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></span> Spotify-oppsett <span class="sum-extra" id="setupSummary"></span></summary>
     <div class="panel-body">
       <label class="lbl" for="redirectUri">Redirect URI (lim inn i Spotify Developer Dashboard)</label>
       <div class="uri-box">
         <code id="redirectUri"></code>
-        <button class="btn" id="copyUriBtn" type="button">📋 Kopier URL</button>
+        <button class="btn" id="copyUriBtn" type="button">Kopier URL</button>
       </div>
       <div id="envWarning" class="warnbox" hidden></div>
 
@@ -427,7 +523,7 @@
       <label class="lbl" for="outSel">Avspillingsenhet (hvor musikken spilles)</label>
       <div class="row">
         <select id="outSel" class="grow"></select>
-        <button class="btn" id="outRefresh" type="button">↻ Oppdater</button>
+        <button class="btn" id="outRefresh" type="button">Oppdater</button>
       </div>
       <div class="hint" id="outHint"></div>
 
@@ -446,28 +542,43 @@
   <!-- ===== Hovedkontroller ===== -->
   <section class="grid app-only">
     <div class="controls">
-      <button id="goalBtn" class="bigbtn" type="button" aria-keyshortcuts="Space M">MÅL!<span class="sub" id="goalSub">SPACE / M</span></button>
+      <button id="goalBtn" class="bigbtn" type="button" aria-keyshortcuts="Space M" aria-label="Mål – spill målmusikk">
+        <span class="gb-row"><span class="eyebrow">Hovedknapp</span><span class="gb-keys"><kbd>SPACE</kbd><kbd>M</kbd></span></span>
+        <span class="gb-word">MÅL</span>
+        <span class="gb-row bottom"><span id="goalSub">Tilfeldig fra runden</span><span id="goalCount"></span></span>
+      </button>
       <div class="cat-row">
-        <button id="timeoutBtn" class="bigbtn catbtn timeout" type="button" aria-keyshortcuts="T">⏱ TIMEOUT<span class="sub" id="timeoutSub">T · 65 %</span></button>
-        <button id="pauseBtn" class="bigbtn catbtn pause" type="button" aria-keyshortcuts="P">☕ PAUSE<span class="sub" id="pauseSub">P · 70 %</span></button>
+        <button id="timeoutBtn" class="bigbtn catbtn timeout" type="button" aria-keyshortcuts="T">
+          <span class="cb-top"><svg class="ic" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5M9.5 2.5h5"></path></svg><kbd>T</kbd></span>
+          <span><span class="cb-word">TIMEOUT</span><span class="sub" id="timeoutSub">Volum 65 %</span></span>
+        </button>
+        <button id="pauseBtn" class="bigbtn catbtn pause" type="button" aria-keyshortcuts="P">
+          <span class="cb-top"><svg class="ic" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5V9z"></path><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3"></path></svg><kbd>P</kbd></span>
+          <span><span class="cb-word">PAUSE</span><span class="sub" id="pauseSub">Volum 70 %</span></span>
+        </button>
       </div>
       <div class="stop-row">
-        <button id="fadeBtn" type="button" aria-keyshortcuts="S">STOPP (FADE UT)<span class="sub">S · 1,5 SEK</span></button>
-        <div class="stop2">
-          <button id="killBtn" type="button" aria-keyshortcuts="Escape">⛔ Nødstopp<br><span class="small">(kutt direkte · Esc)</span></button>
-          <div class="vol">
-            <div class="vtop"><label for="volume">Hovedvolum</label><b id="volumeVal">100 %</b></div>
-            <input type="range" id="volume" min="0" max="100" step="1" value="100">
-          </div>
-        </div>
+        <button id="fadeBtn" type="button" aria-keyshortcuts="S">
+          <span><span class="fb-word">STOPP</span><span class="sub">Myk fade ut · 1,5 s</span></span>
+          <kbd>S</kbd>
+        </button>
+        <button id="killBtn" type="button" aria-keyshortcuts="Escape">
+          <span><span class="kb-word">Nødstopp</span><span class="sub">Kutt direkte</span></span>
+          <kbd>ESC</kbd>
+        </button>
+      </div>
+      <div class="vol">
+        <label for="volume">Hovedvolum</label>
+        <input type="range" id="volume" min="0" max="100" step="1" value="100">
+        <b id="volumeVal">100 %</b>
       </div>
     </div>
 
     <div class="controls">
       <div class="card">
-        <h2>Spiller nå</h2>
+        <div class="card-head"><h2>Spiller nå</h2></div>
         <div class="np">
-          <div class="art" id="npArt" aria-hidden="true">♪</div>
+          <div class="art" id="npArt" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></div>
           <div class="meta">
             <div class="title" id="npTitle">Ingenting spilles</div>
             <div class="artist" id="npArtist">Trykk MÅL! for å starte</div>
@@ -479,11 +590,11 @@
       </div>
 
       <div class="card">
-        <h2 style="margin:0">Runde (ingen repetisjon)</h2>
+        <div class="card-head" style="margin-bottom:0"><h2>Runde · ingen repetisjon</h2></div>
         <div class="seg" id="roundTabs" role="group" aria-label="Velg kategori"></div>
         <div class="round-head">
           <div class="count" id="roundCount">–</div>
-          <button class="btn sm" id="resetRoundBtn" type="button">↻ Nullstill runde</button>
+          <button class="btn sm" id="resetRoundBtn" type="button">Nullstill</button>
         </div>
         <div class="chips" id="roundChips"></div>
       </div>
@@ -492,7 +603,7 @@
 
   <!-- ===== Administrer sanger ===== -->
   <details class="panel app-only" id="adminPanel">
-    <summary>🎵 Administrer sanger og spillelister <span class="sum-extra" id="adminSummary"></span></summary>
+    <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></span> Sanger, spillelister og innstillinger <span class="sum-extra" id="adminSummary"></span></summary>
     <div class="panel-body">
 
       <h3>Innstillinger</h3>
@@ -525,12 +636,12 @@
       <h3>Importer spilleliste</h3>
       <div class="row">
         <input class="grow" id="plLink" type="text" spellcheck="false" placeholder="https://open.spotify.com/playlist/…  eller  spotify:playlist:…">
-        <button class="btn primary" id="plBtn" type="button">📥 Hent sanger</button>
+        <button class="btn primary" id="plBtn" type="button">Hent sanger</button>
       </div>
       <div class="hint" id="plHint"></div>
 
       <div class="section">
-        <h3>🎯 Dropp-finner</h3>
+        <h3>Dropp-finner</h3>
         <div class="set-grid">
           <div>
             <label class="lbl" for="sFinderStart">Start fra (sek)</label>
@@ -543,7 +654,7 @@
         </div>
         <label class="chk"><input type="checkbox" id="sFinderOnly"> Bare sanger uten dropp (står på 0:00)</label>
         <div class="row" style="margin-top:12px">
-          <button class="btn primary" id="finderBtn" type="button">🎯 Finn dropp</button>
+          <button class="btn primary" id="finderBtn" type="button">Finn dropp</button>
         </div>
         <div class="hint">Spiller sangene i kategorien én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger som allerede har dropp starter 5 sek før det.</div>
       </div>
@@ -567,33 +678,33 @@
           <div class="f-cat">
             <label class="lbl" for="fCat">Kategori</label>
             <select id="fCat">
-              <option value="mal">⚽ Mål</option>
-              <option value="timeout">⏱ Timeout</option>
-              <option value="pause">☕ Pause</option>
+              <option value="mal">Mål</option>
+              <option value="timeout">Timeout</option>
+              <option value="pause">Pause</option>
             </select>
           </div>
           <div class="f-drop">
             <label class="lbl" for="fDrop">Starttid / dropp (sek)</label>
             <div class="drop-wrap">
               <input id="fDrop" type="text" inputmode="decimal" placeholder="48.5">
-              <button class="btn sm" id="nowPosBtn" type="button" title="Bruk nåværende avspillingsposisjon">⏱ Nå</button>
+              <button class="btn sm" id="nowPosBtn" type="button" title="Bruk nåværende avspillingsposisjon">Nå</button>
             </div>
           </div>
         </div>
         <div class="row" style="margin-top:14px">
-          <button class="btn primary" id="saveTrackBtn" type="submit">➕ Legg til sang</button>
-          <button class="btn" id="testFormBtn" type="button">▶ Test dropp</button>
+          <button class="btn primary" id="saveTrackBtn" type="submit">Legg til sang</button>
+          <button class="btn" id="testFormBtn" type="button">Test dropp</button>
           <button class="btn ghost" id="cancelEditBtn" type="button" hidden>Avbryt redigering</button>
         </div>
-        <div class="hint">Tips: Spill av sangen med «Test dropp», og trykk «⏱ Nå» når droppet kommer for å hente eksakt posisjon.</div>
+        <div class="hint">Tips: Spill av sangen med «Test dropp», og trykk «Nå» når droppet kommer for å hente eksakt posisjon.</div>
       </form>
 
       <h3 id="listTitle">Låtliste</h3>
       <ul class="tracklist" id="trackList"></ul>
 
       <div class="io-row">
-        <button class="btn" id="exportBtn" type="button">⬇ Eksporter JSON</button>
-        <button class="btn" id="importBtn" type="button">⬆ Importer JSON</button>
+        <button class="btn" id="exportBtn" type="button">Eksporter JSON</button>
+        <button class="btn" id="importBtn" type="button">Importer JSON</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
         <button class="btn danger" id="clearCatBtn" type="button">Tøm kategorien</button>
         <button class="btn ghost" id="defaultsBtn" type="button">Tilbakestill MÅL til eksempellåter</button>
@@ -605,7 +716,7 @@
   <div class="overlay" id="finder" hidden role="dialog" aria-modal="true" aria-labelledby="fnHeading">
     <div class="finder">
       <div class="fn-head">
-        <h2 id="fnHeading">🎯 Dropp-finner · <span id="fnCount"></span></h2>
+        <h2 id="fnHeading">Dropp-finner · <span id="fnCount"></span></h2>
         <button class="btn sm ghost" id="fnClose" type="button" aria-label="Avslutt">✕ Avslutt (Esc)</button>
       </div>
       <div>
@@ -618,16 +729,16 @@
       <div class="fn-seek">
         <button class="btn" type="button" data-seek="-5000">−5 s</button>
         <button class="btn" type="button" data-seek="-1000">−1 s</button>
-        <button class="btn" type="button" id="fnToggle">⏯</button>
+        <button class="btn" type="button" id="fnToggle" aria-label="Spill eller pause">Spill / pause</button>
         <button class="btn" type="button" data-seek="1000">+1 s</button>
         <button class="btn" type="button" data-seek="5000">+5 s</button>
       </div>
-      <button id="fnMark" type="button">🎯 DROPP NÅ<span class="sub">D · LAGRER OG GÅR TIL NESTE</span></button>
+      <button id="fnMark" type="button">DROPP NÅ<span class="sub">D · LAGRER OG GÅR TIL NESTE</span></button>
       <div class="fn-last" id="fnLast"></div>
       <div class="fn-nav">
-        <button class="btn" type="button" id="fnPrev">◀ Forrige (B)</button>
-        <button class="btn" type="button" id="fnReplay">⟲ Hør lagret (R)</button>
-        <button class="btn" type="button" id="fnSkip">Hopp over (N) ▶</button>
+        <button class="btn" type="button" id="fnPrev">Forrige (B)</button>
+        <button class="btn" type="button" id="fnReplay">Hør lagret (R)</button>
+        <button class="btn" type="button" id="fnSkip">Hopp over (N)</button>
       </div>
       <div class="hint" style="text-align:center"><kbd>Space</kbd> pause/spill · <kbd>←</kbd>/<kbd>→</kbd> ±5 s · <kbd>Shift</kbd>+pil ±1 s · <kbd>D</kbd> dropp · <kbd>R</kbd> hør lagret · <kbd>B</kbd>/<kbd>N</kbd> forrige/neste</div>
     </div>
@@ -676,16 +787,16 @@
 
   const CAT_KEYS = ['mal', 'timeout', 'pause'];
   const CATS = {
-    mal: { navn: 'Mål', ikon: '⚽', btn: 'goalBtn' },
-    timeout: { navn: 'Timeout', ikon: '⏱', btn: 'timeoutBtn' },
-    pause: { navn: 'Pause', ikon: '☕', btn: 'pauseBtn' }
+    mal: { navn: 'Mål', btn: 'goalBtn' },
+    timeout: { navn: 'Timeout', btn: 'timeoutBtn' },
+    pause: { navn: 'Pause', btn: 'pauseBtn' }
   };
   const DEFAULT_SETTINGS = {
     autoStopSek: 5, autoStopFade: true, vol: { mal: 100, timeout: 65, pause: 70 },
     finder: { startSek: 30, reaksjonSek: 0.2, bareUtenDropp: true }
   };
 
-  // Eksempellåter for MÅL. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «⏱ Nå».
+  // Eksempellåter for MÅL. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «Nå».
   const DEFAULT_TRACKS = [
     { id: 'std-1', kategori: 'mal', tittel: 'We Will Rock You', artist: 'Queen', spotifyUri: 'spotify:track:54flyrjcdnQdco7300avMJ', dropMs: 0 },
     { id: 'std-2', kategori: 'mal', tittel: 'Seven Nation Army', artist: 'The White Stripes', spotifyUri: 'spotify:track:7i6r9KotUPQg3ozKKgEPIN', dropMs: 0 },
@@ -750,7 +861,7 @@
   /* =====================================================================
    * Varsler
    * ===================================================================== */
-  const ICONS = { error: '⚠️', warn: '⚠️', info: 'ℹ️', success: '✅' };
+  const ICONS = { error: '!', warn: '!', info: 'i', success: '✓' };
   function notify(message, type = 'error', opts = {}) {
     const box = $('notices');
     if (opts.key) clearNotice(opts.key);
@@ -1420,7 +1531,7 @@
     tracks.forEach((t) => { const r = result.get(uriToId(t.spotifyUri)); if (r) invalidIds.set(t.id, r); });
     renderAll();
     if (invalidIds.size) {
-      notify(`${invalidIds.size} sang(er) i listen kan ikke spilles (merket med ⚠ under «Administrer sanger»). De hoppes over automatisk.`, 'warn', { key: 'invalid' });
+      notify(`${invalidIds.size} sang(er) i listen kan ikke spilles (merket i låtlisten). De hoppes over automatisk.`, 'warn', { key: 'invalid' });
     } else clearNotice('invalid');
   }
 
@@ -1564,8 +1675,8 @@
     if (!player || audioUnlocked) return;
     try { if (typeof player.activateElement === 'function') player.activateElement(); } catch { /* ignorer */ }
     audioUnlocked = true;
-    clearNotice('autoplay');
-    renderUnlock();
+    // Endre layout først etter at klikket er ferdig, ellers kan klikket «bomme» på knappen
+    setTimeout(() => { clearNotice('autoplay'); renderUnlock(); }, 700);
   }
 
   function onPlayerState(state) {
@@ -1808,18 +1919,16 @@
 
   function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked && !isRemote()); }
 
-  const DEVICE_ICONS = { computer: '💻', smartphone: '📱', tablet: '📱', speaker: '🔊', tv: '📺', avr: '🔊', stb: '📺', audiodongle: '🔊', gameconsole: '🎮', castvideo: '📺', castaudio: '🔊', automobile: '🚗' };
-
   function renderOutput() {
     const sel = $('outSel');
     sel.textContent = '';
     const add = (value, text) => { const o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o); return o; };
-    add('browser', `🌐 Denne nettleseren («${DEVICE_NAME}»)${IS_MOBILE_OS ? ' – støttes ikke her' : ''}`);
+    add('browser', `Denne nettleseren («${DEVICE_NAME}»)${IS_MOBILE_OS ? ' – støttes ikke her' : ''}`);
     devicesCache.forEach((d) => {
-      add('dev:' + d.id, `${DEVICE_ICONS[(d.type || '').toLowerCase()] || '🎵'} ${d.name} (${d.type || 'enhet'})${d.is_active ? ' · aktiv' : ''}`);
+      add('dev:' + d.id, `${d.name} (${d.type || 'enhet'})${d.is_active ? ' · aktiv' : ''}`);
     });
     const found = isRemote() && devicesCache.some((d) => d.id === output.deviceId);
-    if (isRemote() && output.deviceId && !found) add('dev:' + output.deviceId, `⚠ ${output.deviceName || 'Valgt enhet'} – ikke funnet nå`);
+    if (isRemote() && output.deviceId && !found) add('dev:' + output.deviceId, `${output.deviceName || 'Valgt enhet'} – ikke funnet nå`);
     if (isRemote() && !output.deviceId) add('', '— Velg enhet —');
     sel.value = isRemote() ? (output.deviceId ? 'dev:' + output.deviceId : '') : 'browser';
 
@@ -1829,7 +1938,7 @@
       hint.textContent = !output.deviceId
         ? 'Velg enheten som skal spille musikken. Ser du den ikke: åpne Spotify-appen på enheten, start en sang og sett den på pause, og trykk «↻ Oppdater».'
         : found
-          ? `Fjernkontroll: musikken spilles av «${output.deviceName}».${remoteVolUnsupported ? ' ⚠ Denne enheten tillater ikke volumstyring – fade og Timeout/Pause-volum virker ikke, og STOPP kutter direkte.' : ''} Hold Spotify-appen åpen på enheten.`
+          ? `Fjernkontroll: musikken spilles av «${output.deviceName}».${remoteVolUnsupported ? ' Merk: Denne enheten tillater ikke volumstyring – fade og Timeout/Pause-volum virker ikke, og STOPP kutter direkte.' : ''} Hold Spotify-appen åpen på enheten.`
           : `«${output.deviceName}» er ikke synlig for Spotify akkurat nå. Åpne Spotify-appen på enheten, spill av noe og sett på pause, og trykk «↻ Oppdater».`;
       setStatus(found ? 'on' : 'off', found ? `Fjernkontroll → ${output.deviceName}` : output.deviceId ? `Fant ikke «${output.deviceName}»` : 'Velg avspillingsenhet');
     } else {
@@ -1916,12 +2025,14 @@
   }
 
   function renderButtons() {
-    $('goalSub').textContent = 'SPACE / M' + (settings.autoStopSek > 0 ? ` · STOPP ETTER ${String(settings.autoStopSek).replace('.', ',')} S` : '');
-    $('timeoutSub').textContent = `T · ${settings.vol.timeout} %`;
-    $('pauseSub').textContent = `P · ${settings.vol.pause} %`;
+    $('goalSub').textContent = 'Tilfeldig fra runden' + (settings.autoStopSek > 0 ? ` · stopper etter ${String(settings.autoStopSek).replace('.', ',')} s` : '');
+    const subVol = (el, v) => { el.textContent = 'Volum '; const b = document.createElement('b'); b.textContent = v + ' %'; el.append(b, ' · egen runde'); };
+    subVol($('timeoutSub'), settings.vol.timeout);
+    subVol($('pauseSub'), settings.vol.pause);
   }
 
-  const MODE_TAG = { mal: ['⚽ Mål', 'mal'], timeout: ['⏱ Timeout', 'timeout'], pause: ['☕ Pause', 'pause'], test: ['▶ Test', 'test'] };
+  const MODE_TAG = { mal: ['Mål', 'mal'], timeout: ['Timeout', 'timeout'], pause: ['Pause', 'pause'], test: ['Test', 'test'] };
+  const NOTE_SVG = '<svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>';
 
   function renderNowPlaying() {
     const np = nowPlaying;
@@ -1939,7 +2050,7 @@
       const [label, cls] = MODE_TAG[np.mode] || MODE_TAG.test;
       addTag(label, cls);
       addTag('Fra ' + fmtMs(np.track.dropMs, true), 'drop');
-      addTag('🔊 ' + Math.round(effectiveVolume() * 100) + ' %');
+      addTag('Volum ' + Math.round(effectiveVolume() * 100) + ' %');
       if (autoStopAt) { autoTagEl = addTag('', 'auto'); updateAutoTag(); }
     } else if (ls && ls.name) {
       $('npTitle').textContent = ls.name;
@@ -1951,7 +2062,7 @@
     if (ls && ls.paused && (ls.name || np)) addTag('Pauset', 'paused');
 
     if (ls && ls.image) { art.style.backgroundImage = `url("${ls.image.replace(/"/g, '')}")`; art.textContent = ''; }
-    else { art.style.backgroundImage = ''; art.textContent = '♪'; }
+    else { art.style.backgroundImage = ''; art.innerHTML = NOTE_SVG; }
 
     const showProg = !!(ls && ls.duration);
     $('npProg').hidden = !showProg;
@@ -1967,7 +2078,7 @@
   function updateAutoTag() {
     if (!autoTagEl || !autoStopAt) return;
     const rem = autoStopAt - Date.now();
-    autoTagEl.textContent = isFading ? '⏹ Fader ut …' : rem > 0 ? `⏹ Stopper om ${Math.ceil(rem / 1000)} s` : '⏹ Stopper …';
+    autoTagEl.textContent = isFading ? 'Fader ut …' : rem > 0 ? `Stopper om ${Math.ceil(rem / 1000)} s` : 'Stopper …';
   }
 
   function updateProgress() {
@@ -1986,7 +2097,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('aria-pressed', String(k === active));
-      b.textContent = `${CATS[k].ikon} ${CATS[k].navn}`;
+      b.textContent = CATS[k].navn;
       const c = document.createElement('span'); c.className = 'c'; c.textContent = `(${tracksIn(k).length})`;
       b.appendChild(c);
       b.addEventListener('click', () => onPick(k));
@@ -2026,6 +2137,8 @@
       chips.appendChild(e);
     }
     $('resetRoundBtn').disabled = played[cat].length === 0;
+    const gu = usableTracks('mal');
+    $('goalCount').textContent = gu.length ? `${gu.filter((t) => !played.mal.includes(t.id)).length} / ${gu.length} igjen` : '';
   }
 
   let editingId = null;
@@ -2039,10 +2152,10 @@
   function renderTrackList() {
     renderSeg('adminTabs', adminCat, setAdminCat);
     const navn = CATS[adminCat].navn;
-    $('listTitle').textContent = `Låtliste – ${CATS[adminCat].ikon} ${navn}`;
+    $('listTitle').textContent = `Låtliste – ${navn}`;
     $('plHint').textContent = `Sangene legges i «${navn}» (velg kategori over). Duplikater hoppes over. Starttid settes til 0:00 – juster per sang etterpå.`;
     $('clearCatBtn').textContent = `Tøm «${navn}»`;
-    $('finderBtn').textContent = `🎯 Finn dropp i «${navn}»`;
+    $('finderBtn').textContent = `Finn dropp i «${navn}»`;
     $('clearCatBtn').disabled = !tracksIn(adminCat).length;
     $('adminSummary').textContent = '· ' + CAT_KEYS.map((k) => `${CATS[k].navn} ${tracksIn(k).length}`).join(' · ');
     if (!editingId) $('formTitle').textContent = `Legg til enkeltsang`;
@@ -2064,13 +2177,13 @@
       const tt = document.createElement('div'); tt.className = 't'; tt.textContent = t.tittel;
       const aa = document.createElement('div'); aa.className = 'a'; aa.textContent = t.artist || '—';
       info.append(tt, aa);
-      if (invalidIds.has(t.id)) { const w = document.createElement('div'); w.className = 'warn'; w.textContent = '⚠ ' + invalidIds.get(t.id); info.appendChild(w); }
+      if (invalidIds.has(t.id)) { const w = document.createElement('div'); w.className = 'warn'; w.textContent = invalidIds.get(t.id); info.appendChild(w); }
       const d = document.createElement('div'); d.className = 'd'; d.textContent = fmtMs(t.dropMs, true); d.title = (t.dropMs / 1000).toFixed(1) + ' sek';
       const acts = document.createElement('div'); acts.className = 'acts';
       acts.append(
-        mkBtn('▶ Test dropp', 'btn sm', () => { unlockAudio(); playTrack(t, 'test'); }),
-        mkBtn('✎ Rediger', 'btn sm', () => startEdit(t.id)),
-        mkBtn('🗑 Slett', 'btn sm danger', () => deleteTrack(t.id))
+        mkBtn('Test dropp', 'btn sm', () => { unlockAudio(); playTrack(t, 'test'); }),
+        mkBtn('Rediger', 'btn sm', () => startEdit(t.id)),
+        mkBtn('Slett', 'btn sm danger', () => deleteTrack(t.id))
       );
       li.append(n, info, d, acts);
       ul.appendChild(li);
@@ -2111,7 +2224,7 @@
     editingId = null;
     $('trackForm').reset();
     $('fCat').value = adminCat;
-    $('saveTrackBtn').textContent = '➕ Legg til sang';
+    $('saveTrackBtn').textContent = 'Legg til sang';
     $('cancelEditBtn').hidden = true;
     setLinkHint('', '');
     renderTrackList();
@@ -2127,7 +2240,7 @@
     $('fCat').value = t.kategori;
     $('fDrop').value = (t.dropMs / 1000).toFixed(1);
     $('formTitle').textContent = 'Rediger: ' + t.tittel;
-    $('saveTrackBtn').textContent = '💾 Lagre endringer';
+    $('saveTrackBtn').textContent = 'Lagre endringer';
     $('cancelEditBtn').hidden = false;
     setLinkHint('Track ID: ' + uriToId(t.spotifyUri), 'ok');
     renderTrackList();
@@ -2174,7 +2287,7 @@
       const artists = (tr.artists || []).map((a) => a.name).join(', ');
       if (!$('fTitle').value.trim()) $('fTitle').value = tr.name || '';
       if (!$('fArtist').value.trim()) $('fArtist').value = artists;
-      setLinkHint(`✓ Fant: ${tr.name} – ${artists} (${fmtMs(tr.duration_ms)})${tr.is_playable === false ? ' · ⚠ ikke tilgjengelig i ditt land' : ''}`, tr.is_playable === false ? 'bad' : 'ok');
+      setLinkHint(`✓ Fant: ${tr.name} – ${artists} (${fmtMs(tr.duration_ms)})${tr.is_playable === false ? ' · ikke tilgjengelig i ditt land' : ''}`, tr.is_playable === false ? 'bad' : 'ok');
     } catch (e) {
       if (my !== metaReq) return;
       const notFound = e.status === 404 || e.status === 400;
@@ -2245,7 +2358,7 @@
     }
     const cat = adminCat;
     const btn = $('plBtn');
-    btn.disabled = true; btn.textContent = '⏳ Henter …';
+    btn.disabled = true; btn.textContent = 'Henter …';
     try {
       const { name, tracks: list, skipped } = await fetchPlaylist(pid);
       const existing = new Set(tracksIn(cat).map((t) => t.spotifyUri));
@@ -2271,7 +2384,7 @@
       else msg = explainError(e);
       notify(msg, 'error', { key: 'playlist' });
     } finally {
-      btn.disabled = false; btn.textContent = '📥 Hent sanger';
+      btn.disabled = false; btn.textContent = 'Hent sanger';
     }
   }
 
@@ -2383,7 +2496,7 @@
   function renderFinder() {
     const t = finderTrack();
     if (!t) return;
-    $('fnCount').textContent = `${CATS[finder.cat].ikon} ${CATS[finder.cat].navn} · ${finder.idx + 1} av ${finder.queue.length}`;
+    $('fnCount').textContent = `${CATS[finder.cat].navn} · ${finder.idx + 1} av ${finder.queue.length}`;
     $('fnTitle').textContent = t.tittel;
     $('fnArtist').textContent = t.artist;
     $('fnSaved').textContent = t.dropMs > 0 ? `Lagret dropp: ${fmtMs(t.dropMs, true)}` : 'Ingen dropp lagret ennå';
@@ -2504,7 +2617,7 @@
       }
       btn.textContent = ok ? '✓ Kopiert!' : 'Marker og kopier manuelt';
       if (!ok) { const r = document.createRange(); r.selectNodeContents($('redirectUri')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
-      setTimeout(() => { btn.textContent = '📋 Kopier URL'; }, 2200);
+      setTimeout(() => { btn.textContent = 'Kopier URL'; }, 2200);
     });
 
     const cid = $('clientId');
