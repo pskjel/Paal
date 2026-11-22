@@ -424,6 +424,14 @@
   .gate-note { display: flex; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); font-size: .84rem; line-height: 1.55; color: #B5B1A8; }
   .gate-note svg { margin-top: 2px; color: var(--muted); }
 
+  /* Forenklet visning når Client ID er lagt fast inn (administrator: #admin) */
+  body.simple .admin-only { display: none !important; }
+  body.simple.locked #setupPanel { display: none; }
+  .gate-admin { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding-top: 10px; border-top: 1px solid #222227; color: var(--muted); font-size: .84rem; font-weight: 600; text-decoration: none; }
+  .gate-admin:hover { color: var(--text); }
+  .gate-admin::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); }
+  body:not(.simple) .gate-admin { display: none; }
+
   footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #222227; color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 10px 26px; }
   footer kbd { margin-right: 6px; }
   [hidden] { display: none !important; }
@@ -496,14 +504,16 @@
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
           <span>Musikken krever Spotify Premium. Ingen tilgang? Be administrator legge e-posten til Spotify-kontoen din inn under <b style="color:var(--text);font-weight:600">User Management</b> i Spotify Dashboard.</span>
         </div>
+        <a href="#admin" class="gate-admin" id="gateAdminLink">Administrator · Spotify-oppsett</a>
       </div>
     </div>
   </section>
 
   <!-- ===== Spotify Oppsett ===== -->
   <details class="panel" id="setupPanel">
-    <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></span> Spotify-oppsett <span class="sum-extra" id="setupSummary"></span></summary>
+    <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></span> <span id="setupTitle">Spotify-oppsett</span> <span class="sum-extra" id="setupSummary"></span></summary>
     <div class="panel-body">
+      <div class="admin-only">
       <label class="lbl" for="redirectUri">Redirect URI (lim inn i Spotify Developer Dashboard)</label>
       <div class="uri-box">
         <code id="redirectUri"></code>
@@ -519,6 +529,7 @@
       </div>
       <div class="hint" id="clientIdHint">Lagres automatisk på denne enheten.</div>
       <div id="accountBox" class="okbox" hidden></div>
+      </div>
 
       <label class="lbl" for="outSel">Avspillingsenhet (hvor musikken spilles)</label>
       <div class="row">
@@ -527,6 +538,7 @@
       </div>
       <div class="hint" id="outHint"></div>
 
+      <div class="admin-only">
       <h3>Slik setter du opp (én gang)</h3>
       <ol class="steps">
         <li>Gå til <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> og trykk <b>Create app</b>.</li>
@@ -534,8 +546,9 @@
         <li>Kopier <b>Client ID</b> fra appens innstillinger og lim den inn her. (Client Secret trengs <b>ikke</b>.)</li>
         <li>Mens appen er i «Development mode»: legg til e-posten til Spotify-kontoen som skal brukes under <b>User Management</b>.</li>
         <li>Kontoen må ha <b>Spotify Premium</b>. På PC/Mac (Chrome, Edge, Firefox, Safari) kan musikken spilles rett i nettleseren.</li>
-        <li><b>iPad / mobil:</b> nettleseren kan ikke spille selv – appen blir da en <b>fjernkontroll</b>. Åpne Spotify-appen (på iPaden eller en PC/høyttaler i hallen), start en sang og sett på pause, trykk <b>↻ Oppdater</b> og velg enheten under «Avspillingsenhet».</li>
+        <li><b>iPad / mobil:</b> nettleseren kan ikke spille selv – appen blir da en <b>fjernkontroll</b>. Åpne Spotify-appen (på iPaden eller en PC/høyttaler i hallen), start en sang og sett på pause, trykk <b>Oppdater</b> og velg enheten under «Avspillingsenhet».</li>
       </ol>
+      </div>
     </div>
   </details>
 
@@ -1951,6 +1964,14 @@
   }
   function openSetup() { $('setupPanel').open = true; }
 
+  /** Forenklet visning for vanlige brukere når Client ID er lagt fast inn i appen. */
+  function applyViewMode() {
+    const admin = window.location.hash === '#admin' || !DEFAULT_CLIENT_ID;
+    document.body.classList.toggle('simple', !admin);
+    $('setupTitle').textContent = admin ? 'Spotify-oppsett' : 'Avspillingsenhet';
+    if (admin && DEFAULT_CLIENT_ID && window.location.hash === '#admin') openSetup();
+  }
+
   function renderAuth() {
     const loggedIn = !!tokens;
     $('loginBtn').hidden = loggedIn;
@@ -2810,6 +2831,8 @@
    * ===================================================================== */
   async function start() {
     bindEvents();
+    applyViewMode();
+    window.addEventListener('hashchange', applyViewMode);
     renderEnvWarning();
     renderSettings();
     $('fCat').value = adminCat;
