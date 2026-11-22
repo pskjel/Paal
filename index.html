@@ -281,6 +281,37 @@
   .io-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
   .empty { padding: 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
 
+  /* ---------- Dropp-finner ---------- */
+  body.finder-open { overflow: hidden; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.75);
+    display: grid; place-items: center; padding: 16px; overflow-y: auto;
+  }
+  .finder {
+    width: min(720px, 100%); background: var(--panel); border: 2px solid var(--accent);
+    border-radius: 20px; padding: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .fn-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .fn-head h2 { margin: 0; color: var(--accent); }
+  .fn-title { font-size: clamp(1.3rem, 4vw, 1.9rem); font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; }
+  .fn-artist { color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+  .fn-pos { font-size: clamp(2.6rem, 10vw, 4.6rem); font-weight: 900; font-variant-numeric: tabular-nums; text-align: center; color: var(--accent); line-height: 1; }
+  .fn-pos small { font-size: 1rem; color: var(--muted); font-weight: 700; }
+  .fn-saved { text-align: center; font-weight: 700; }
+  .fn-seek { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .fn-seek .btn { padding: 8px 4px; }
+  .fn-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .fn-nav .btn { padding: 8px 6px; font-size: .9rem; }
+  #fnMark {
+    width: 100%; min-height: 96px; border: 0; border-radius: 18px; color: #1a1200;
+    background: radial-gradient(circle at 50% 30%, #fde68a, var(--accent) 50%, #ca8a04);
+    box-shadow: 0 7px 0 #854d0e; font-size: clamp(1.6rem, 5vw, 2.4rem); font-weight: 900; letter-spacing: .03em;
+  }
+  #fnMark:active { transform: translateY(5px); box-shadow: 0 2px 0 #854d0e; }
+  #fnMark .sub { display: block; font-size: .78rem; letter-spacing: .12em; opacity: .75; }
+  .fn-last { min-height: 1.3em; text-align: center; color: #86efac; font-weight: 700; font-size: .92rem; }
+
   footer { margin-top: 18px; color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; }
   kbd { background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 1px 7px; font-family: inherit; font-weight: 800; color: var(--text); font-size: .82rem; }
   [hidden] { display: none !important; }
@@ -420,6 +451,25 @@
       </div>
       <div class="hint" id="plHint"></div>
 
+      <div class="section">
+        <h3>🎯 Dropp-finner</h3>
+        <div class="set-grid">
+          <div>
+            <label class="lbl" for="sFinderStart">Start fra (sek)</label>
+            <input id="sFinderStart" type="text" inputmode="decimal" placeholder="30">
+          </div>
+          <div>
+            <label class="lbl" for="sFinderReact">Reaksjonstid (sek)</label>
+            <input id="sFinderReact" type="text" inputmode="decimal" placeholder="0.2">
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="sFinderOnly"> Bare sanger uten dropp (står på 0:00)</label>
+        <div class="row" style="margin-top:12px">
+          <button class="btn primary" id="finderBtn" type="button">🎯 Finn dropp</button>
+        </div>
+        <div class="hint">Spiller sangene i kategorien én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger som allerede har dropp starter 5 sek før det.</div>
+      </div>
+
       <form id="trackForm" autocomplete="off" novalidate class="section">
         <h3 id="formTitle">Legg til enkeltsang</h3>
         <div class="form-grid">
@@ -473,6 +523,38 @@
     </div>
   </details>
 
+  <!-- ===== Dropp-finner (overlay) ===== -->
+  <div class="overlay" id="finder" hidden role="dialog" aria-modal="true" aria-labelledby="fnHeading">
+    <div class="finder">
+      <div class="fn-head">
+        <h2 id="fnHeading">🎯 Dropp-finner · <span id="fnCount"></span></h2>
+        <button class="btn sm ghost" id="fnClose" type="button" aria-label="Avslutt">✕ Avslutt (Esc)</button>
+      </div>
+      <div>
+        <div class="fn-title" id="fnTitle">–</div>
+        <div class="fn-artist" id="fnArtist"></div>
+      </div>
+      <div class="fn-pos"><span id="fnPos">0:00.0</span> <small>/ <span id="fnDur">0:00</span></small></div>
+      <div class="prog"><i id="fnBar"></i><b id="fnMarkLine" hidden></b></div>
+      <div class="fn-saved" id="fnSaved"></div>
+      <div class="fn-seek">
+        <button class="btn" type="button" data-seek="-5000">−5 s</button>
+        <button class="btn" type="button" data-seek="-1000">−1 s</button>
+        <button class="btn" type="button" id="fnToggle">⏯</button>
+        <button class="btn" type="button" data-seek="1000">+1 s</button>
+        <button class="btn" type="button" data-seek="5000">+5 s</button>
+      </div>
+      <button id="fnMark" type="button">🎯 DROPP NÅ<span class="sub">D · LAGRER OG GÅR TIL NESTE</span></button>
+      <div class="fn-last" id="fnLast"></div>
+      <div class="fn-nav">
+        <button class="btn" type="button" id="fnPrev">◀ Forrige (B)</button>
+        <button class="btn" type="button" id="fnReplay">⟲ Hør lagret (R)</button>
+        <button class="btn" type="button" id="fnSkip">Hopp over (N) ▶</button>
+      </div>
+      <div class="hint" style="text-align:center"><kbd>Space</kbd> pause/spill · <kbd>←</kbd>/<kbd>→</kbd> ±5 s · <kbd>Shift</kbd>+pil ±1 s · <kbd>D</kbd> dropp · <kbd>R</kbd> hør lagret · <kbd>B</kbd>/<kbd>N</kbd> forrige/neste</div>
+    </div>
+  </div>
+
   <footer>
     <span><kbd>Space</kbd> / <kbd>M</kbd> MÅL!</span>
     <span><kbd>T</kbd> Timeout</span>
@@ -513,7 +595,10 @@
     timeout: { navn: 'Timeout', ikon: '⏱', btn: 'timeoutBtn' },
     pause: { navn: 'Pause', ikon: '☕', btn: 'pauseBtn' }
   };
-  const DEFAULT_SETTINGS = { autoStopSek: 5, autoStopFade: true, vol: { mal: 100, timeout: 65, pause: 70 } };
+  const DEFAULT_SETTINGS = {
+    autoStopSek: 5, autoStopFade: true, vol: { mal: 100, timeout: 65, pause: 70 },
+    finder: { startSek: 30, reaksjonSek: 0.2, bareUtenDropp: true }
+  };
 
   // Eksempellåter for MÅL. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «⏱ Nå».
   const DEFAULT_TRACKS = [
@@ -679,6 +764,12 @@
     if (Number.isFinite(a) && a >= 0 && a <= 600) s.autoStopSek = Math.round(a * 10) / 10;
     if (typeof raw.autoStopFade === 'boolean') s.autoStopFade = raw.autoStopFade;
     if (raw.vol && typeof raw.vol === 'object') CAT_KEYS.forEach((k) => { if (raw.vol[k] !== undefined && raw.vol[k] !== '') s.vol[k] = clampVol(raw.vol[k]); });
+    const f = raw.finder && typeof raw.finder === 'object' ? raw.finder : {};
+    const fs = Number(f.startSek);
+    if (Number.isFinite(fs) && fs >= 0 && fs <= 900) s.finder.startSek = Math.round(fs * 10) / 10;
+    const fr = Number(f.reaksjonSek);
+    if (Number.isFinite(fr) && fr >= 0 && fr <= 2) s.finder.reaksjonSek = Math.round(fr * 100) / 100;
+    if (typeof f.bareUtenDropp === 'boolean') s.finder.bareUtenDropp = f.bareUtenDropp;
     return s;
   }
   function saveTracks() { store.set(LS.tracks, tracks); }
@@ -1491,6 +1582,7 @@
     $('listTitle').textContent = `Låtliste – ${CATS[adminCat].ikon} ${navn}`;
     $('plHint').textContent = `Sangene legges i «${navn}» (velg kategori over). Duplikater hoppes over. Starttid settes til 0:00 – juster per sang etterpå.`;
     $('clearCatBtn').textContent = `Tøm «${navn}»`;
+    $('finderBtn').textContent = `🎯 Finn dropp i «${navn}»`;
     $('clearCatBtn').disabled = !tracksIn(adminCat).length;
     $('adminSummary').textContent = '· ' + CAT_KEYS.map((k) => `${CATS[k].navn} ${tracksIn(k).length}`).join(' · ');
     if (!editingId) $('formTitle').textContent = `Legg til enkeltsang`;
@@ -1534,6 +1626,9 @@
     $('sAuto').value = String(settings.autoStopSek);
     $('sFade').checked = settings.autoStopFade;
     CAT_KEYS.forEach((k) => { $('sVol-' + k).value = settings.vol[k]; });
+    $('sFinderStart').value = String(settings.finder.startSek);
+    $('sFinderReact').value = String(settings.finder.reaksjonSek);
+    $('sFinderOnly').checked = settings.finder.bareUtenDropp;
     renderButtons();
   }
 
@@ -1771,9 +1866,143 @@
     const a = parseSeconds($('sAuto').value);
     const vol = {};
     CAT_KEYS.forEach((k) => { vol[k] = $('sVol-' + k).value; });
-    settings = sanitizeSettings({ autoStopSek: Number.isFinite(a) ? a : settings.autoStopSek, autoStopFade: $('sFade').checked, vol });
+    const fs = parseSeconds($('sFinderStart').value);
+    const fr = parseSeconds($('sFinderReact').value);
+    settings = sanitizeSettings({
+      autoStopSek: Number.isFinite(a) ? a : settings.autoStopSek,
+      autoStopFade: $('sFade').checked,
+      vol,
+      finder: {
+        startSek: Number.isFinite(fs) ? fs : settings.finder.startSek,
+        reaksjonSek: Number.isFinite(fr) ? fr : settings.finder.reaksjonSek,
+        bareUtenDropp: $('sFinderOnly').checked
+      }
+    });
     saveSettings();
     renderButtons();
+  }
+
+  /* =====================================================================
+   * Dropp-finner
+   * ===================================================================== */
+  const finder = { active: false, cat: 'mal', queue: [], idx: 0, saved: 0 };
+  const finderTrack = () => tracks.find((t) => t.id === finder.queue[finder.idx]);
+
+  function startFinder() {
+    if (!tokens || !player || !deviceId) {
+      notify('Logg inn med Spotify og vent til statusen øverst er grønn før du starter Dropp-finneren.', 'warn', { key: 'finder' });
+      return;
+    }
+    const cat = adminCat;
+    const only = settings.finder.bareUtenDropp;
+    const list = tracksIn(cat).filter((t) => !only || !t.dropMs);
+    if (!list.length) {
+      notify(only
+        ? `Alle sangene i «${CATS[cat].navn}» har allerede dropp. Fjern haken «Bare sanger uten dropp» for å gå gjennom alle.`
+        : `Ingen sanger i «${CATS[cat].navn}».`, 'info', { key: 'finder' });
+      return;
+    }
+    Object.assign(finder, { active: true, cat, queue: list.map((t) => t.id), idx: 0, saved: 0 });
+    $('fnLast').textContent = '';
+    $('finder').hidden = false;
+    document.body.classList.add('finder-open');
+    unlockAudio();
+    finderLoad();
+  }
+
+  async function finderLoad() {
+    const t = finderTrack();
+    if (!t) { // sangen er slettet underveis
+      if (finder.idx < finder.queue.length - 1) { finder.idx++; return finderLoad(); }
+      return finderDone();
+    }
+    renderFinder();
+    const start = t.dropMs > 0 ? Math.max(0, t.dropMs - 5000) : settings.finder.startSek * 1000;
+    await playTrack({ ...t, dropMs: start }, 'test');
+  }
+
+  function renderFinder() {
+    const t = finderTrack();
+    if (!t) return;
+    $('fnCount').textContent = `${CATS[finder.cat].ikon} ${CATS[finder.cat].navn} · ${finder.idx + 1} av ${finder.queue.length}`;
+    $('fnTitle').textContent = t.tittel;
+    $('fnArtist').textContent = t.artist;
+    $('fnSaved').textContent = t.dropMs > 0 ? `Lagret dropp: ${fmtMs(t.dropMs, true)}` : 'Ingen dropp lagret ennå';
+    $('fnPrev').disabled = finder.idx === 0;
+    updateFinderPos();
+  }
+
+  function updateFinderPos() {
+    if (!finder.active) return;
+    const t = finderTrack();
+    const ls = liveState;
+    const ok = ls && ls.duration && t && (ls.uri === t.spotifyUri || ls.linkedUri === t.spotifyUri);
+    if (!ok) { $('fnPos').textContent = '–:–'; $('fnBar').style.width = '0'; $('fnMarkLine').hidden = true; return; }
+    const pos = ls.paused ? ls.position : Math.min(ls.duration, ls.position + (performance.now() - ls.stamp));
+    $('fnPos').textContent = fmtMs(pos, true);
+    $('fnDur').textContent = fmtMs(ls.duration);
+    $('fnBar').style.width = (pos / ls.duration) * 100 + '%';
+    const line = $('fnMarkLine');
+    if (t.dropMs > 0) { line.hidden = false; line.style.left = Math.min(100, (t.dropMs / ls.duration) * 100) + '%'; }
+    else line.hidden = true;
+  }
+
+  async function finderMark() {
+    const t = finderTrack();
+    if (!t || !player) return;
+    let st = null;
+    try { st = await player.getCurrentState(); } catch { /* ignorer */ }
+    if (!st) { notify('Ingenting spilles akkurat nå – vent til sangen har startet.', 'warn', { key: 'finder' }); return; }
+    const ms = Math.max(0, Math.round((st.position - settings.finder.reaksjonSek * 1000) / 100) * 100);
+    t.dropMs = ms;
+    saveTracks();
+    finder.saved++;
+    renderAll();
+    $('fnLast').textContent = `✓ «${t.tittel}» lagret: ${fmtMs(ms, true)}`;
+    finderNext();
+  }
+
+  function finderNext() {
+    if (finder.idx < finder.queue.length - 1) { finder.idx++; finderLoad(); }
+    else finderDone();
+  }
+  function finderPrev() {
+    if (finder.idx > 0) { finder.idx--; finderLoad(); }
+  }
+  async function finderSeek(delta) {
+    if (!player) return;
+    try {
+      const st = await player.getCurrentState();
+      if (!st) return;
+      await player.seek(Math.max(0, Math.min(st.duration - 500, st.position + delta)));
+    } catch { /* ignorer */ }
+  }
+  async function finderReplay() {
+    const t = finderTrack();
+    if (!t || !player) return;
+    if (!t.dropMs) { notify('Denne sangen har ingen lagret dropp ennå.', 'info', { key: 'finder' }); return; }
+    try {
+      const st = await player.getCurrentState();
+      const cur = st && st.track_window && st.track_window.current_track;
+      if (cur && (cur.uri === t.spotifyUri || (cur.linked_from && cur.linked_from.uri === t.spotifyUri))) {
+        await player.seek(t.dropMs);
+        await player.resume();
+      } else {
+        await playTrack(t, 'test');
+      }
+    } catch { /* ignorer */ }
+  }
+  function finderDone() {
+    const n = finder.saved;
+    closeFinder();
+    notify(`Dropp-finner ferdig – ${n} starttid${n === 1 ? '' : 'er'} lagret.`, 'success', { timeout: 8000 });
+  }
+  function closeFinder() {
+    if (!finder.active) return;
+    finder.active = false;
+    $('finder').hidden = true;
+    document.body.classList.remove('finder-open');
+    emergencyStop();
   }
 
   /* =====================================================================
@@ -1845,6 +2074,17 @@
 
     ['sAuto', 'sVol-mal', 'sVol-timeout', 'sVol-pause'].forEach((id) => $(id).addEventListener('change', () => { onSettingsChange(); renderSettings(); }));
     $('sFade').addEventListener('change', onSettingsChange);
+    ['sFinderStart', 'sFinderReact'].forEach((id) => $(id).addEventListener('change', () => { onSettingsChange(); renderSettings(); }));
+    $('sFinderOnly').addEventListener('change', onSettingsChange);
+
+    $('finderBtn').addEventListener('click', startFinder);
+    $('fnClose').addEventListener('click', closeFinder);
+    $('fnMark').addEventListener('click', finderMark);
+    $('fnSkip').addEventListener('click', finderNext);
+    $('fnPrev').addEventListener('click', finderPrev);
+    $('fnReplay').addEventListener('click', finderReplay);
+    $('fnToggle').addEventListener('click', () => { if (player) player.togglePlay().catch(() => {}); });
+    document.querySelectorAll('#finder [data-seek]').forEach((b) => b.addEventListener('click', () => finderSeek(Number(b.dataset.seek))));
 
     $('plBtn').addEventListener('click', importPlaylist);
     $('plLink').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); importPlaylist(); } });
@@ -1889,10 +2129,24 @@
     // Tastatursnarveier
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === 'Escape') { e.preventDefault(); emergencyStop(); return; }
-      if (isTypingTarget(e.target)) return;
       const isSpace = e.code === 'Space' || e.key === ' ';
       const k = (e.key || '').toLowerCase();
+      if (finder.active) {
+        if (e.key === 'Escape') { e.preventDefault(); closeFinder(); return; }
+        if (isTypingTarget(e.target)) return;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          const step = e.shiftKey ? 1000 : 5000;
+          finderSeek(e.key === 'ArrowLeft' ? -step : step);
+          return;
+        }
+        const fmap = { d: finderMark, n: finderNext, b: finderPrev, r: finderReplay };
+        if (isSpace) { e.preventDefault(); if (!e.repeat && player) player.togglePlay().catch(() => {}); return; }
+        if (fmap[k]) { e.preventDefault(); if (!e.repeat) fmap[k](); }
+        return; // ingen andre snarveier mens Dropp-finneren er åpen
+      }
+      if (e.key === 'Escape') { e.preventDefault(); emergencyStop(); return; }
+      if (isTypingTarget(e.target)) return;
       const actions = {
         m: () => { pressAnim('goalBtn'); playCategory('mal'); },
         t: () => { pressAnim('timeoutBtn'); playCategory('timeout'); },
@@ -1919,6 +2173,7 @@
     setInterval(() => {
       if (liveState && !liveState.paused) updateProgress();
       updateAutoTag();
+      if (finder.active) updateFinderPos();
     }, 250);
   }
 
