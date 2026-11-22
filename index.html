@@ -21,6 +21,8 @@
     --amber: #f59e0b;
     --accent: #facc15;
     --blue: #38bdf8;
+    --tblue: #2563eb;
+    --purple: #9333ea;
     --radius: 16px;
     --gutter: 16px;
     color-scheme: dark;
@@ -98,18 +100,17 @@
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
   h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
   h3 { font-size: .95rem; margin: 18px 0 8px; }
+  .section { margin-top: 18px; padding-top: 4px; border-top: 1px solid var(--line); }
 
   label.lbl { display: block; font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 14px 0 6px; }
-  input[type=text], input[type=url], input[type=number], input:not([type]) {
+  input[type=text], input[type=url], input[type=number], input:not([type]), select {
     width: 100%; padding: 12px 14px; background: var(--bg2); border: 1px solid var(--line);
     border-radius: 10px; font-size: 1rem; min-height: 48px;
   }
-  input:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  input:focus-visible, button:focus-visible, summary:focus-visible, select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .row > .grow { flex: 1 1 220px; min-width: 0; }
-  .uri-box {
-    display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch;
-  }
+  .uri-box { display: flex; gap: 10px; flex-wrap: wrap; align-items: stretch; }
   .uri-box code {
     flex: 1 1 260px; min-width: 0; display: block; padding: 12px 14px; background: #000; border: 1px dashed var(--accent);
     border-radius: 10px; color: var(--accent); font-size: 1rem; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -136,32 +137,54 @@
   .warnbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #2a1e07; border: 1px solid var(--amber); color: #ffe9bf; font-size: .9rem; font-weight: 600; }
   .okbox { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #0b2617; border: 1px solid var(--green); color: #d2ffe2; font-size: .92rem; font-weight: 600; }
 
+  /* ---------- Segment-faner (kategorier) ---------- */
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .seg button {
+    flex: 1 1 auto; min-height: 44px; padding: 8px 14px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--bg2); font-weight: 800; font-size: .92rem;
+  }
+  .seg button .c { opacity: .7; font-weight: 700; margin-left: 4px; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
+  .seg button[aria-pressed="true"] .c { opacity: .8; }
+
   /* ---------- Main control grid ---------- */
   .grid { display: grid; gap: 14px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); margin-bottom: 14px; }
   @media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
   .controls { display: flex; flex-direction: column; gap: 14px; }
 
+  .bigbtn { position: relative; overflow: hidden; }
+  .bigbtn.flash::after {
+    content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash .6s ease-out; pointer-events: none;
+  }
+  @keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+  .bigbtn.busy { filter: saturate(.6) brightness(.9); }
+
   #goalBtn {
-    position: relative; width: 100%; min-height: clamp(180px, 34vh, 320px);
+    width: 100%; min-height: clamp(170px, 30vh, 290px);
     border: 0; border-radius: 24px; color: #031407;
     background: radial-gradient(circle at 50% 30%, #4ade80, var(--green) 45%, var(--green-d));
     box-shadow: 0 10px 0 #0c5a2a, 0 18px 40px rgba(34,197,94,.35), inset 0 2px 0 rgba(255,255,255,.35);
     font-size: clamp(3.2rem, 11vw, 7.5rem); font-weight: 900; letter-spacing: .04em;
     text-shadow: 0 2px 0 rgba(255,255,255,.35);
     transition: transform .06s, box-shadow .06s, filter .2s;
-    overflow: hidden;
   }
   #goalBtn .sub { display: block; font-size: clamp(.8rem, 1.6vw, 1rem); letter-spacing: .14em; font-weight: 800; opacity: .7; text-shadow: none; }
   #goalBtn:active, #goalBtn.pressed { transform: translateY(8px); box-shadow: 0 2px 0 #0c5a2a, 0 8px 20px rgba(34,197,94,.3), inset 0 2px 0 rgba(255,255,255,.3); }
-  #goalBtn.busy { filter: saturate(.6) brightness(.9); }
-  #goalBtn.flash::after {
-    content: ""; position: absolute; inset: 0; background: #fff; opacity: 0; animation: flash .6s ease-out;
+
+  .cat-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .catbtn {
+    min-height: 100px; border: 0; border-radius: 18px; color: #fff;
+    font-size: clamp(1.4rem, 3.8vw, 2.1rem); font-weight: 900; letter-spacing: .03em;
+    transition: transform .06s, box-shadow .06s, filter .2s;
   }
-  @keyframes flash { 0% { opacity: .75; } 100% { opacity: 0; } }
+  .catbtn .sub { display: block; font-size: .78rem; letter-spacing: .12em; opacity: .85; font-weight: 800; }
+  .catbtn.timeout { background: radial-gradient(circle at 50% 30%, #60a5fa, var(--tblue) 55%, #1e3a8a); box-shadow: 0 7px 0 #172554, 0 12px 26px rgba(37,99,235,.3), inset 0 2px 0 rgba(255,255,255,.25); }
+  .catbtn.pause { background: radial-gradient(circle at 50% 30%, #c084fc, var(--purple) 55%, #581c87); box-shadow: 0 7px 0 #3b0764, 0 12px 26px rgba(147,51,234,.3), inset 0 2px 0 rgba(255,255,255,.25); }
+  .catbtn:active, .catbtn.pressed { transform: translateY(6px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
 
   .stop-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   #fadeBtn {
-    width: 100%; min-height: 110px; border: 0; border-radius: 20px; color: #fff;
+    width: 100%; min-height: 100px; border: 0; border-radius: 20px; color: #fff;
     background: radial-gradient(circle at 50% 30%, #f87171, var(--red) 50%, var(--red-d));
     box-shadow: 0 8px 0 #6b1111, 0 14px 30px rgba(239,68,68,.3), inset 0 2px 0 rgba(255,255,255,.3);
     font-size: clamp(1.6rem, 4.6vw, 2.6rem); font-weight: 900; letter-spacing: .03em;
@@ -194,20 +217,23 @@
   .np .artist { color: var(--muted); font-weight: 600; margin-top: 2px; overflow-wrap: anywhere; }
   .np .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .tag { font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: var(--panel2); border: 1px solid var(--line); text-transform: uppercase; letter-spacing: .05em; }
-  .tag.goal { background: var(--green); color: #04140a; border-color: var(--green); }
+  .tag.mal { background: var(--green); color: #04140a; border-color: var(--green); }
+  .tag.timeout { background: var(--tblue); color: #fff; border-color: var(--tblue); }
+  .tag.pause { background: var(--purple); color: #fff; border-color: var(--purple); }
   .tag.test { background: var(--blue); color: #021018; border-color: var(--blue); }
   .tag.drop { background: #2b2408; color: var(--accent); border-color: #5c4d0f; }
   .tag.paused { background: #2a1e07; color: var(--amber); border-color: #5c430f; }
+  .tag.auto { background: #2a0f12; color: #fecaca; border-color: var(--red); }
   .prog { margin-top: 14px; height: 8px; background: var(--bg2); border-radius: 99px; overflow: hidden; position: relative; }
   .prog > i { position: absolute; inset: 0 auto 0 0; width: 0; background: linear-gradient(90deg, var(--accent), #f97316); border-radius: 99px; }
   .prog > b { position: absolute; top: -3px; bottom: -3px; width: 3px; background: #fff; border-radius: 2px; opacity: .8; }
   .times { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
 
   /* ---------- Round ---------- */
-  .round-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .round-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
   .count { font-size: 1.35rem; font-weight: 900; }
   .count span { color: var(--accent); }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 260px; overflow-y: auto; }
   .chip {
     padding: 8px 12px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line);
     font-weight: 700; font-size: .9rem; max-width: 100%; overflow-wrap: anywhere;
@@ -217,13 +243,19 @@
   .chip.bad { border-color: var(--amber); }
   .chip.current { border-color: var(--green); box-shadow: 0 0 0 2px rgba(34,197,94,.35); opacity: 1; text-decoration: none; }
 
-  /* ---------- Track admin ---------- */
+  /* ---------- Admin ---------- */
+  .set-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 12px; }
+  @media (max-width: 700px) { .set-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .chk { display: flex; gap: 10px; align-items: center; margin-top: 12px; font-weight: 600; font-size: .95rem; }
+  .chk input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
   .form-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0 12px; }
   .f-link { grid-column: span 12; }
-  .f-title { grid-column: span 5; }
-  .f-artist { grid-column: span 4; }
+  .f-title { grid-column: span 4; }
+  .f-artist { grid-column: span 3; }
+  .f-cat { grid-column: span 2; }
   .f-drop { grid-column: span 3; }
-  @media (max-width: 760px) { .f-title, .f-artist { grid-column: span 12; } .f-drop { grid-column: span 12; } }
+  @media (max-width: 900px) { .f-title, .f-artist { grid-column: span 6; } .f-cat { grid-column: span 5; } .f-drop { grid-column: span 7; } }
+  @media (max-width: 560px) { .f-title, .f-artist, .f-cat, .f-drop { grid-column: span 12; } }
   .drop-wrap { display: flex; gap: 8px; }
   .drop-wrap input { flex: 1; min-width: 0; }
   .hint { font-size: .82rem; color: var(--muted); margin-top: 6px; min-height: 1.1em; }
@@ -251,7 +283,6 @@
 
   footer { margin-top: 18px; color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; }
   kbd { background: var(--panel2); border: 1px solid var(--line); border-bottom-width: 3px; border-radius: 6px; padding: 1px 7px; font-family: inherit; font-weight: 800; color: var(--text); font-size: .82rem; }
-  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -306,7 +337,11 @@
   <!-- ===== Hovedkontroller ===== -->
   <section class="grid">
     <div class="controls">
-      <button id="goalBtn" type="button" aria-keyshortcuts="Space M">MÅL!<span class="sub">SPACE / M</span></button>
+      <button id="goalBtn" class="bigbtn" type="button" aria-keyshortcuts="Space M">MÅL!<span class="sub" id="goalSub">SPACE / M</span></button>
+      <div class="cat-row">
+        <button id="timeoutBtn" class="bigbtn catbtn timeout" type="button" aria-keyshortcuts="T">⏱ TIMEOUT<span class="sub" id="timeoutSub">T · 65 %</span></button>
+        <button id="pauseBtn" class="bigbtn catbtn pause" type="button" aria-keyshortcuts="P">☕ PAUSE<span class="sub" id="pauseSub">P · 70 %</span></button>
+      </div>
       <div class="stop-row">
         <button id="fadeBtn" type="button" aria-keyshortcuts="S">STOPP (FADE UT)<span class="sub">S · 1,5 SEK</span></button>
         <div class="stop2">
@@ -335,11 +370,10 @@
       </div>
 
       <div class="card">
+        <h2 style="margin:0">Runde (ingen repetisjon)</h2>
+        <div class="seg" id="roundTabs" role="group" aria-label="Velg kategori"></div>
         <div class="round-head">
-          <div>
-            <h2 style="margin:0">Denne runden</h2>
-            <div class="count" id="roundCount">–</div>
-          </div>
+          <div class="count" id="roundCount">–</div>
           <button class="btn sm" id="resetRoundBtn" type="button">↻ Nullstill runde</button>
         </div>
         <div class="chips" id="roundChips"></div>
@@ -347,12 +381,47 @@
     </div>
   </section>
 
-  <!-- ===== Administrer målsanger ===== -->
+  <!-- ===== Administrer sanger ===== -->
   <details class="panel" id="adminPanel">
-    <summary>🎵 Administrer målsanger <span class="sum-extra" id="adminSummary"></span></summary>
+    <summary>🎵 Administrer sanger og spillelister <span class="sum-extra" id="adminSummary"></span></summary>
     <div class="panel-body">
-      <form id="trackForm" autocomplete="off" novalidate>
-        <h3 id="formTitle">Legg til ny sang</h3>
+
+      <h3>Innstillinger</h3>
+      <div class="set-grid">
+        <div>
+          <label class="lbl" for="sAuto">Auto-stopp MÅL (sek)</label>
+          <input id="sAuto" type="text" inputmode="decimal" placeholder="5">
+        </div>
+        <div>
+          <label class="lbl" for="sVol-mal">Volum MÅL (%)</label>
+          <input id="sVol-mal" type="number" min="0" max="100" step="1">
+        </div>
+        <div>
+          <label class="lbl" for="sVol-timeout">Volum Timeout (%)</label>
+          <input id="sVol-timeout" type="number" min="0" max="100" step="1">
+        </div>
+        <div>
+          <label class="lbl" for="sVol-pause">Volum Pause (%)</label>
+          <input id="sVol-pause" type="number" min="0" max="100" step="1">
+        </div>
+      </div>
+      <label class="chk"><input type="checkbox" id="sFade"> Myk fade ut de siste 1,5 sek før auto-stopp (av = brå kutt)</label>
+      <div class="hint">Auto-stopp gjelder bare MÅL-sanger (0 = av). Volum er prosent av hovedvolumet. Lagres automatisk.</div>
+
+      <div class="section">
+        <h3>Kategori</h3>
+        <div class="seg" id="adminTabs" role="group" aria-label="Velg kategori å redigere"></div>
+      </div>
+
+      <h3>Importer spilleliste</h3>
+      <div class="row">
+        <input class="grow" id="plLink" type="text" spellcheck="false" placeholder="https://open.spotify.com/playlist/…  eller  spotify:playlist:…">
+        <button class="btn primary" id="plBtn" type="button">📥 Hent sanger</button>
+      </div>
+      <div class="hint" id="plHint"></div>
+
+      <form id="trackForm" autocomplete="off" novalidate class="section">
+        <h3 id="formTitle">Legg til enkeltsang</h3>
         <div class="form-grid">
           <div class="f-link">
             <label class="lbl" for="fLink">Spotify-lenke eller URI</label>
@@ -367,6 +436,14 @@
             <label class="lbl" for="fArtist">Artist</label>
             <input id="fArtist" type="text">
           </div>
+          <div class="f-cat">
+            <label class="lbl" for="fCat">Kategori</label>
+            <select id="fCat">
+              <option value="mal">⚽ Mål</option>
+              <option value="timeout">⏱ Timeout</option>
+              <option value="pause">☕ Pause</option>
+            </select>
+          </div>
           <div class="f-drop">
             <label class="lbl" for="fDrop">Starttid / dropp (sek)</label>
             <div class="drop-wrap">
@@ -380,23 +457,26 @@
           <button class="btn" id="testFormBtn" type="button">▶ Test dropp</button>
           <button class="btn ghost" id="cancelEditBtn" type="button" hidden>Avbryt redigering</button>
         </div>
-        <div class="hint">Tips: Spill av sangen med «Test dropp», juster tiden og trykk «⏱ Nå» når droppet kommer for å hente eksakt posisjon.</div>
+        <div class="hint">Tips: Spill av sangen med «Test dropp», og trykk «⏱ Nå» når droppet kommer for å hente eksakt posisjon.</div>
       </form>
 
-      <h3>Låtliste</h3>
+      <h3 id="listTitle">Låtliste</h3>
       <ul class="tracklist" id="trackList"></ul>
 
       <div class="io-row">
         <button class="btn" id="exportBtn" type="button">⬇ Eksporter JSON</button>
         <button class="btn" id="importBtn" type="button">⬆ Importer JSON</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
-        <button class="btn ghost" id="defaultsBtn" type="button">Tilbakestill til eksempellåter</button>
+        <button class="btn danger" id="clearCatBtn" type="button">Tøm kategorien</button>
+        <button class="btn ghost" id="defaultsBtn" type="button">Tilbakestill MÅL til eksempellåter</button>
       </div>
     </div>
   </details>
 
   <footer>
     <span><kbd>Space</kbd> / <kbd>M</kbd> MÅL!</span>
+    <span><kbd>T</kbd> Timeout</span>
+    <span><kbd>P</kbd> Pause</span>
     <span><kbd>S</kbd> Stopp (fade ut)</span>
     <span><kbd>Esc</kbd> Nødstopp</span>
     <span>Snarveier er av mens du skriver i tekstfelt (Esc virker alltid).</span>
@@ -421,19 +501,28 @@
     tracks: 'soundboard.tracks',
     played: 'soundboard.played',
     volume: 'soundboard.volume',
+    settings: 'soundboard.settings',
     verifier: 'soundboard.pkceVerifier',
     state: 'soundboard.pkceState'
   };
   const PREMIUM_MSG = 'Denne Spotify-kontoen har ikke Premium. Spotify krever Premium for å spille musikk i nettleseren (Web Playback SDK). Logg inn med en Premium-konto.';
 
-  // Eksempellåter. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «⏱ Nå».
+  const CAT_KEYS = ['mal', 'timeout', 'pause'];
+  const CATS = {
+    mal: { navn: 'Mål', ikon: '⚽', btn: 'goalBtn' },
+    timeout: { navn: 'Timeout', ikon: '⏱', btn: 'timeoutBtn' },
+    pause: { navn: 'Pause', ikon: '☕', btn: 'pauseBtn' }
+  };
+  const DEFAULT_SETTINGS = { autoStopSek: 5, autoStopFade: true, vol: { mal: 100, timeout: 65, pause: 70 } };
+
+  // Eksempellåter for MÅL. dropMs er omtrentlige startpunkter – finjuster med «Test dropp» og «⏱ Nå».
   const DEFAULT_TRACKS = [
-    { id: 'std-1', tittel: 'We Will Rock You', artist: 'Queen', spotifyUri: 'spotify:track:54flyrjcdnQdco7300avMJ', dropMs: 0 },
-    { id: 'std-2', tittel: 'Seven Nation Army', artist: 'The White Stripes', spotifyUri: 'spotify:track:7i6r9KotUPQg3ozKKgEPIN', dropMs: 0 },
-    { id: 'std-3', tittel: 'Levels', artist: 'Avicii', spotifyUri: 'spotify:track:5UqCQaDshqbIk3pkhy4Pjg', dropMs: 62000 },
-    { id: 'std-4', tittel: "Don't You Worry Child", artist: 'Swedish House Mafia, John Martin', spotifyUri: 'spotify:track:2V65y3PX4DkRhy1djlxd9p', dropMs: 82000 },
-    { id: 'std-5', tittel: 'Sandstorm', artist: 'Darude', spotifyUri: 'spotify:track:6Sy9BUbgFse0n0LPA5lwy5', dropMs: 0 },
-    { id: 'std-6', tittel: 'Song 2', artist: 'Blur', spotifyUri: 'spotify:track:3GfOAdcoc3X5GPiiXmpBjK', dropMs: 8500 }
+    { id: 'std-1', kategori: 'mal', tittel: 'We Will Rock You', artist: 'Queen', spotifyUri: 'spotify:track:54flyrjcdnQdco7300avMJ', dropMs: 0 },
+    { id: 'std-2', kategori: 'mal', tittel: 'Seven Nation Army', artist: 'The White Stripes', spotifyUri: 'spotify:track:7i6r9KotUPQg3ozKKgEPIN', dropMs: 0 },
+    { id: 'std-3', kategori: 'mal', tittel: 'Levels', artist: 'Avicii', spotifyUri: 'spotify:track:5UqCQaDshqbIk3pkhy4Pjg', dropMs: 62000 },
+    { id: 'std-4', kategori: 'mal', tittel: "Don't You Worry Child", artist: 'Swedish House Mafia, John Martin', spotifyUri: 'spotify:track:2V65y3PX4DkRhy1djlxd9p', dropMs: 82000 },
+    { id: 'std-5', kategori: 'mal', tittel: 'Sandstorm', artist: 'Darude', spotifyUri: 'spotify:track:6Sy9BUbgFse0n0LPA5lwy5', dropMs: 0 },
+    { id: 'std-6', kategori: 'mal', tittel: 'Song 2', artist: 'Blur', spotifyUri: 'spotify:track:3GfOAdcoc3X5GPiiXmpBjK', dropMs: 8500 }
   ];
 
   /* =====================================================================
@@ -455,18 +544,24 @@
     const totalSec = ms / 1000;
     const m = Math.floor(totalSec / 60);
     const s = totalSec - m * 60;
-    if (withTenths) {
-      const ss = s.toFixed(1).padStart(4, '0');
-      return `${m}:${ss}`;
-    }
+    if (withTenths) return `${m}:${s.toFixed(1).padStart(4, '0')}`;
     return `${m}:${String(Math.floor(s)).padStart(2, '0')}`;
   }
 
+  const SPOTIFY_LINK = (kind) => new RegExp(`(?:spotify:${kind}:|open\\.spotify\\.com\\/(?:intl-[a-z]{2}(?:-[a-z]{2})?\\/)?(?:embed\\/)?${kind}\\/)([A-Za-z0-9]{22})`, 'i');
   /** Trekker ut Spotify Track ID fra lenke, URI eller ren ID. */
   function parseTrackId(input) {
     if (!input) return null;
     const s = String(input).trim();
-    const m = s.match(/(?:spotify:track:|open\.spotify\.com\/(?:intl-[a-z]{2}(?:-[a-z]{2})?\/)?(?:embed\/)?track\/)([A-Za-z0-9]{22})/i);
+    const m = s.match(SPOTIFY_LINK('track'));
+    if (m) return m[1];
+    if (/^[A-Za-z0-9]{22}$/.test(s)) return s;
+    return null;
+  }
+  function parsePlaylistId(input) {
+    if (!input) return null;
+    const s = String(input).trim();
+    const m = s.match(SPOTIFY_LINK('playlist'));
     if (m) return m[1];
     if (/^[A-Za-z0-9]{22}$/.test(s)) return s;
     return null;
@@ -477,8 +572,7 @@
     if (str === null || str === undefined) return NaN;
     const s = String(str).trim().replace(',', '.');
     if (s === '') return 0;
-    // Godta også m:ss(.d)
-    const mm = s.match(/^(\d+):(\d{1,2}(?:\.\d+)?)$/);
+    const mm = s.match(/^(\d+):(\d{1,2}(?:\.\d+)?)$/); // godta også m:ss(.d)
     if (mm) return Number(mm[1]) * 60 + Number(mm[2]);
     return Number(s);
   }
@@ -512,7 +606,8 @@
    * Tilstand
    * ===================================================================== */
   let tracks = loadTracks();
-  let played = (store.get(LS.played, []) || []).filter((id) => tracks.some((t) => t.id === id));
+  let played = loadPlayed();
+  let settings = loadSettings();
   let masterVolume = clampVol(store.get(LS.volume, 100));
   let tokens = store.get(LS.tokens, null);
   let profile = null;
@@ -527,14 +622,21 @@
   let busy = false;
   let fadeToken = 0;
   let isFading = false;
+  let volFactor = 1;           // kategori-volum for det som spilles nå (0–1)
+  let autoStopTimer = null;
+  let autoStopAt = null;       // tidspunkt (Date.now()) da MÅL-sangen stoppes automatisk
+  let autoTagEl = null;
 
-  let nowPlaying = null;       // { track, mode: 'goal'|'test', at }
+  let nowPlaying = null;       // { track, mode: 'mal'|'timeout'|'pause'|'test', at }
   let liveState = null;        // fra player_state_changed
   const invalidIds = new Map(); // track.id -> grunn
+  let adminCat = 'mal';
+  let roundCat = 'mal';
 
   function clampVol(v) { v = Number(v); return Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 100; }
+  function emptyPlayed() { return { mal: [], timeout: [], pause: [] }; }
 
-  function normalizeTrack(o) {
+  function normalizeTrack(o, defaultCat = 'mal') {
     if (!o || typeof o !== 'object') return null;
     const tid = parseTrackId(o.spotifyUri || o.uri || o.url || o.link || o.trackId || '');
     if (!tid) return null;
@@ -543,6 +645,7 @@
     if (!Number.isFinite(dropMs) || dropMs < 0) dropMs = 0;
     return {
       id: (typeof o.id === 'string' && o.id.trim()) ? o.id.trim().slice(0, 64) : newId(),
+      kategori: CAT_KEYS.includes(o.kategori) ? o.kategori : defaultCat,
       tittel: String(o.tittel ?? o.title ?? 'Ukjent tittel').slice(0, 200),
       artist: String(o.artist ?? '').slice(0, 200),
       spotifyUri: 'spotify:track:' + tid,
@@ -556,10 +659,33 @@
   function loadTracks() {
     const saved = store.get(LS.tracks, null);
     if (!Array.isArray(saved)) return DEFAULT_TRACKS.map((t) => ({ ...t }));
-    return dedupeIds(saved.map(normalizeTrack).filter(Boolean));
+    return dedupeIds(saved.map((t) => normalizeTrack(t)).filter(Boolean));
+  }
+  function loadPlayed() {
+    const raw = store.get(LS.played, null);
+    const p = emptyPlayed();
+    if (Array.isArray(raw)) p.mal = raw; // eldre format
+    else if (raw && typeof raw === 'object') CAT_KEYS.forEach((k) => { if (Array.isArray(raw[k])) p[k] = raw[k]; });
+    CAT_KEYS.forEach((k) => { p[k] = p[k].filter((id) => tracks.some((t) => t.id === id && t.kategori === k)); });
+    return p;
+  }
+  function loadSettings() {
+    const raw = store.get(LS.settings, {}) || {};
+    return sanitizeSettings(raw);
+  }
+  function sanitizeSettings(raw) {
+    const s = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    const a = Number(raw.autoStopSek);
+    if (Number.isFinite(a) && a >= 0 && a <= 600) s.autoStopSek = Math.round(a * 10) / 10;
+    if (typeof raw.autoStopFade === 'boolean') s.autoStopFade = raw.autoStopFade;
+    if (raw.vol && typeof raw.vol === 'object') CAT_KEYS.forEach((k) => { if (raw.vol[k] !== undefined && raw.vol[k] !== '') s.vol[k] = clampVol(raw.vol[k]); });
+    return s;
   }
   function saveTracks() { store.set(LS.tracks, tracks); }
   function savePlayed() { store.set(LS.played, played); }
+  function saveSettings() { store.set(LS.settings, settings); }
+  const tracksIn = (cat) => tracks.filter((t) => t.kategori === cat);
+  const effectiveVolume = () => (masterVolume / 100) * volFactor;
 
   /* =====================================================================
    * Spotify-autentisering (Authorization Code with PKCE)
@@ -635,7 +761,7 @@
     scheduleRefresh();
   }
 
-  /** Håndterer retur fra Spotify (?code=… / ?error=…). Returnerer true hvis innlogging lyktes. */
+  /** Håndterer retur fra Spotify (?code=… / ?error=…). */
   async function handleRedirect() {
     const params = new URLSearchParams(window.location.search);
     if (!params.has('code') && !params.has('error')) return false;
@@ -730,6 +856,7 @@
 
   function logout(silent) {
     clearTimeout(refreshTimer);
+    clearAutoStop();
     tokens = null; profile = null;
     store.del(LS.tokens);
     if (player) { try { player.disconnect(); } catch { /* ignorer */ } }
@@ -744,10 +871,12 @@
    * Spotify Web API
    * ===================================================================== */
   async function api(method, path, body, attempt = 0) {
+    const url = path.startsWith('https://') ? path : 'https://api.spotify.com/v1' + path;
+    if (!url.startsWith('https://api.spotify.com/')) throw new Error('Ugyldig API-adresse');
     const token = await getToken();
     let res;
     try {
-      res = await fetch('https://api.spotify.com/v1' + path, {
+      res = await fetch(url, {
         method,
         headers: Object.assign({ Authorization: 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
         body: body ? JSON.stringify(body) : undefined
@@ -826,7 +955,7 @@
       for (let i = 0; i < ids.length; i += 50) {
         const chunk = ids.slice(i, i + 50);
         const data = await api('GET', '/tracks?market=from_token&ids=' + chunk.join(','));
-        (data && data.tracks || []).forEach((tr, idx) => {
+        ((data && data.tracks) || []).forEach((tr, idx) => {
           if (!tr) result.set(chunk[idx], 'Finnes ikke på Spotify – sjekk lenken');
           else if (tr.is_playable === false) result.set(chunk[idx], 'Ikke tilgjengelig i ditt land');
         });
@@ -836,8 +965,54 @@
     tracks.forEach((t) => { const r = result.get(uriToId(t.spotifyUri)); if (r) invalidIds.set(t.id, r); });
     renderAll();
     if (invalidIds.size) {
-      notify(`${invalidIds.size} sang(er) i listen kan ikke spilles (merket med ⚠ under «Administrer målsanger»). De hoppes over av MÅL!-knappen.`, 'warn', { key: 'invalid' });
+      notify(`${invalidIds.size} sang(er) i listen kan ikke spilles (merket med ⚠ under «Administrer sanger»). De hoppes over automatisk.`, 'warn', { key: 'invalid' });
     } else clearNotice('invalid');
+  }
+
+  /** Henter alle sangene i en spilleliste (med paginering). */
+  async function fetchPlaylist(id) {
+    let name = null;
+    try {
+      const meta = await api('GET', `/playlists/${id}?fields=name`);
+      name = meta && meta.name;
+    } catch (e) {
+      if (e.status === 404 || e.status === 403 || e.status === 401) throw e;
+    }
+    const out = [];
+    let skipped = 0;
+    const collect = (page) => {
+      ((page && page.items) || []).forEach((it) => {
+        const tr = it && (it.track || it.item);
+        if (!tr || it.is_local || tr.is_local || tr.type === 'episode') { skipped++; return; }
+        const tid = parseTrackId(tr.uri || '');
+        if (!tid) { skipped++; return; }
+        out.push({
+          tittel: tr.name || 'Ukjent tittel',
+          artist: (tr.artists || []).map((a) => a.name).join(', '),
+          spotifyUri: 'spotify:track:' + tid,
+          dropMs: 0
+        });
+      });
+    };
+    let lastErr = null;
+    // «tracks» er det klassiske endepunktet; «items» er nyere variant – prøv begge.
+    for (const ep of ['tracks', 'items']) {
+      try {
+        out.length = 0; skipped = 0;
+        let page = await api('GET', `/playlists/${id}/${ep}?limit=50&market=from_token`);
+        collect(page);
+        let guard = 0;
+        while (page && page.next && guard++ < 60) {
+          page = await api('GET', page.next);
+          collect(page);
+        }
+        return { name, tracks: out, skipped };
+      } catch (e) {
+        lastErr = e;
+        if (![403, 404, 410].includes(e.status)) throw e;
+      }
+    }
+    throw lastErr;
   }
 
   /* =====================================================================
@@ -878,7 +1053,7 @@
       renderUnlock();
       try { await transferPlayback(); } catch (e) { notify('Kunne ikke overføre avspillingen til nettleseren: ' + explainError(e), 'warn', { key: 'transfer' }); }
       ensureShuffleOff().catch(() => {});
-      player.setVolume(masterVolume / 100).catch(() => {});
+      player.setVolume(effectiveVolume()).catch(() => {});
     });
 
     player.addListener('not_ready', ({ device_id }) => {
@@ -896,7 +1071,7 @@
 
     player.addListener('authentication_error', async () => {
       if (authRetries++ < 2) {
-        try { await refreshToken(); player && player.connect(); return; } catch { /* faller gjennom */ }
+        try { await refreshToken(); if (player) player.connect(); return; } catch { /* faller gjennom */ }
       }
       setStatus('off', 'Innlogging utløpt');
       notify('Spotify godtok ikke innloggingen. Logg inn på nytt under «Spotify Oppsett».', 'error', { key: 'auth' });
@@ -915,7 +1090,7 @@
     player.addListener('autoplay_failed', () => {
       audioUnlocked = false;
       renderUnlock();
-      notify('Nettleseren blokkerte automatisk lydavspilling. Klikk én gang hvor som helst på siden (eller «Aktiver lyd» øverst), og trykk MÅL! igjen.', 'warn', { key: 'autoplay' });
+      notify('Nettleseren blokkerte automatisk lydavspilling. Klikk én gang hvor som helst på siden (eller «Aktiver lyd» øverst), og trykk knappen igjen.', 'warn', { key: 'autoplay' });
     });
 
     player.addListener('player_state_changed', onPlayerState);
@@ -970,12 +1145,13 @@
       return false;
     }
     cancelFade();
+    volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     const body = { uris: [track.spotifyUri], position_ms: Math.max(0, Math.round(track.dropMs || 0)) };
     const path = '/me/player/play?device_id=' + encodeURIComponent(deviceId);
     try {
       await Promise.all([
         ensureShuffleOff().catch(() => {}),
-        player.setVolume(masterVolume / 100).catch(() => {})
+        player.setVolume(effectiveVolume()).catch(() => {})
       ]);
       try {
         await api('PUT', path, body);
@@ -994,38 +1170,49 @@
     return true;
   }
 
-  function pickNext() {
-    const pool = tracks.filter((t) => !invalidIds.has(t.id));
-    const usable = pool.length ? pool : tracks;
-    let remaining = usable.filter((t) => !played.includes(t.id));
+  function usableTracks(cat) {
+    const all = tracksIn(cat);
+    const ok = all.filter((t) => !invalidIds.has(t.id));
+    return ok.length ? ok : all;
+  }
+
+  function pickNext(cat) {
+    const usable = usableTracks(cat);
+    if (!usable.length) return null;
+    let remaining = usable.filter((t) => !played[cat].includes(t.id));
     if (!remaining.length) {
-      const last = played[played.length - 1];
-      played = [];
+      const last = played[cat][played[cat].length - 1];
+      played[cat] = [];
       savePlayed();
-      notify('Alle sangene er spilt – ny runde startet!', 'info', { key: 'round' });
+      notify(`Alle ${CATS[cat].navn.toLowerCase()}-sangene er spilt – ny runde startet!`, 'info', { key: 'round' });
       // Unngå at samme sang spilles to ganger på rad over rundeskiftet
       remaining = usable.length > 1 ? usable.filter((t) => t.id !== last) : usable;
     }
     return remaining[Math.floor(Math.random() * remaining.length)];
   }
 
-  async function goal() {
-    const btn = $('goalBtn');
+  async function playCategory(cat) {
+    const btn = $(CATS[cat].btn);
     if (busy) return;
-    if (!tracks.length) {
-      notify('Låtlisten er tom. Legg til sanger under «Administrer målsanger».', 'warn', { key: 'play' });
+    if (!tracksIn(cat).length) {
+      notify(`Ingen sanger i «${CATS[cat].navn}». Legg til sanger eller en spilleliste under «Administrer sanger og spillelister».`, 'warn', { key: 'play' });
+      setAdminCat(cat);
+      $('adminPanel').open = true;
       return;
     }
     busy = true;
     btn.classList.add('busy');
     try {
-      const track = pickNext();
+      const track = pickNext(cat);
       if (!track) return;
-      const ok = await playTrack(track, 'goal');
+      const ok = await playTrack(track, cat);
       if (ok) {
-        if (!played.includes(track.id)) played.push(track.id);
+        if (!played[cat].includes(track.id)) played[cat].push(track.id);
         savePlayed();
+        roundCat = cat;
+        if (cat === 'mal' && settings.autoStopSek > 0) scheduleAutoStop(settings.autoStopSek * 1000);
         renderRound();
+        renderNowPlaying();
         btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
       }
     } finally {
@@ -1034,39 +1221,62 @@
     }
   }
 
+  /* ---------- Auto-stopp for MÅL ---------- */
+  function scheduleAutoStop(ms) {
+    clearAutoStop();
+    autoStopAt = Date.now() + ms;
+    if (settings.autoStopFade) {
+      const fadeDur = Math.min(FADE_MS, ms);
+      autoStopTimer = setTimeout(() => { autoStopTimer = null; fadeOut(fadeDur, true); }, ms - fadeDur);
+    } else {
+      autoStopTimer = setTimeout(() => { autoStopTimer = null; emergencyStop(); }, ms);
+    }
+  }
+  function clearAutoStop() {
+    clearTimeout(autoStopTimer);
+    autoStopTimer = null;
+    if (autoStopAt !== null) { autoStopAt = null; if (autoTagEl) { autoTagEl.remove(); autoTagEl = null; } }
+  }
+
   function cancelFade() {
     fadeToken++;
     isFading = false;
     $('fadeBtn').classList.remove('fading');
+    clearAutoStop();
   }
 
-  async function fadeOut() {
+  async function fadeOut(durationMs = FADE_MS, fromAuto = false) {
     if (!player) { return emergencyStop(); }
+    if (!fromAuto) clearAutoStop();
     if (isFading) return;
     const my = ++fadeToken;
     isFading = true;
     $('fadeBtn').classList.add('fading');
     try {
-      let start = masterVolume / 100;
-      try { const v = await player.getVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk hovedvolum */ }
-      const stepMs = FADE_MS / FADE_STEPS; // 15 steg à 100 ms
+      let start = effectiveVolume();
+      try { const v = await player.getVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk beregnet volum */ }
+      const stepMs = durationMs / FADE_STEPS; // standard: 15 steg à 100 ms
       const t0 = performance.now();
       for (let i = 1; i <= FADE_STEPS; i++) {
         await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
         if (my !== fadeToken) return;
-        const v = Math.max(0, start * (1 - i / FADE_STEPS));
-        await player.setVolume(v);
+        await player.setVolume(Math.max(0, start * (1 - i / FADE_STEPS)));
       }
       if (my !== fadeToken) return;
       await player.pause();
       await sleep(150);
       if (my !== fadeToken) return;
+      volFactor = 1;
       await player.setVolume(masterVolume / 100); // klar til neste mål
     } catch (e) {
       notify('Fade-out feilet: ' + (e && e.message ? e.message : e), 'error');
       try { await player.pause(); await player.setVolume(masterVolume / 100); } catch { /* ignorer */ }
     } finally {
-      if (my === fadeToken) { isFading = false; $('fadeBtn').classList.remove('fading'); }
+      if (my === fadeToken) {
+        isFading = false;
+        $('fadeBtn').classList.remove('fading');
+        if (fromAuto) clearAutoStop();
+      }
     }
   }
 
@@ -1078,6 +1288,7 @@
     } catch (e) {
       if (e.status !== 403) notify(explainError(e), 'error', { key: 'play' });
     }
+    volFactor = 1;
     if (player) { try { await player.setVolume(masterVolume / 100); } catch { /* ignorer */ } }
   }
 
@@ -1107,16 +1318,12 @@
    * Rendering
    * ===================================================================== */
   function setStatus(state, text) {
-    const dot = $('statusDot');
-    dot.className = 'dot' + (state === 'on' ? ' on' : state === 'wait' ? ' wait' : '');
+    $('statusDot').className = 'dot' + (state === 'on' ? ' on' : state === 'wait' ? ' wait' : '');
     $('statusText').textContent = text;
     $('setupSummary').textContent = state === 'on' ? '· tilkoblet' : tokens ? '· ' + text.toLowerCase() : '· ikke innlogget';
   }
 
-  function renderUnlock() {
-    $('unlockPill').hidden = !(player && !audioUnlocked);
-  }
-
+  function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked); }
   function openSetup() { $('setupPanel').open = true; }
 
   function renderAuth() {
@@ -1157,27 +1364,38 @@
     w.textContent = msgs.join(' ');
   }
 
+  function renderButtons() {
+    $('goalSub').textContent = 'SPACE / M' + (settings.autoStopSek > 0 ? ` · STOPP ETTER ${String(settings.autoStopSek).replace('.', ',')} S` : '');
+    $('timeoutSub').textContent = `T · ${settings.vol.timeout} %`;
+    $('pauseSub').textContent = `P · ${settings.vol.pause} %`;
+  }
+
+  const MODE_TAG = { mal: ['⚽ Mål', 'mal'], timeout: ['⏱ Timeout', 'timeout'], pause: ['☕ Pause', 'pause'], test: ['▶ Test', 'test'] };
+
   function renderNowPlaying() {
     const np = nowPlaying;
     const ls = liveState;
     const art = $('npArt');
     const tags = $('npTags');
     tags.textContent = '';
-    const addTag = (text, cls) => { const s = document.createElement('span'); s.className = 'tag ' + (cls || ''); s.textContent = text; tags.appendChild(s); };
+    autoTagEl = null;
+    const addTag = (text, cls) => { const s = document.createElement('span'); s.className = 'tag ' + (cls || ''); s.textContent = text; tags.appendChild(s); return s; };
 
     const matches = np && ls && (ls.uri === np.track.spotifyUri || ls.linkedUri === np.track.spotifyUri);
     if (np && (!ls || matches)) {
       $('npTitle').textContent = np.track.tittel || (ls && ls.name) || 'Ukjent';
       $('npArtist').textContent = np.track.artist || (ls && ls.artists) || '';
-      addTag(np.mode === 'goal' ? '⚽ Mål' : '▶ Test', np.mode === 'goal' ? 'goal' : 'test');
-      addTag('Dropp fra ' + fmtMs(np.track.dropMs, true), 'drop');
-      addTag(new Date(np.at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      const [label, cls] = MODE_TAG[np.mode] || MODE_TAG.test;
+      addTag(label, cls);
+      addTag('Fra ' + fmtMs(np.track.dropMs, true), 'drop');
+      addTag('🔊 ' + Math.round(effectiveVolume() * 100) + ' %');
+      if (autoStopAt) { autoTagEl = addTag('', 'auto'); updateAutoTag(); }
     } else if (ls && ls.name) {
       $('npTitle').textContent = ls.name;
       $('npArtist').textContent = ls.artists;
     } else {
       $('npTitle').textContent = 'Ingenting spilles';
-      $('npArtist').textContent = tokens ? 'Trykk MÅL! for å starte' : 'Logg inn med Spotify for å starte';
+      $('npArtist').textContent = tokens ? 'Trykk MÅL!, TIMEOUT eller PAUSE for å starte' : 'Logg inn med Spotify for å starte';
     }
     if (ls && ls.paused && (ls.name || np)) addTag('Pauset', 'paused');
 
@@ -1193,7 +1411,12 @@
       mark.style.left = Math.min(100, (np.track.dropMs / ls.duration) * 100) + '%';
     } else mark.hidden = true;
     updateProgress();
-    renderRound();
+  }
+
+  function updateAutoTag() {
+    if (!autoTagEl || !autoStopAt) return;
+    const rem = autoStopAt - Date.now();
+    autoTagEl.textContent = isFading ? '⏹ Fader ut …' : rem > 0 ? `⏹ Stopper om ${Math.ceil(rem / 1000)} s` : '⏹ Stopper …';
   }
 
   function updateProgress() {
@@ -1205,43 +1428,83 @@
     $('npDur').textContent = fmtMs(ls.duration);
   }
 
+  function renderSeg(containerId, active, onPick) {
+    const box = $(containerId);
+    box.textContent = '';
+    CAT_KEYS.forEach((k) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(k === active));
+      b.textContent = `${CATS[k].ikon} ${CATS[k].navn}`;
+      const c = document.createElement('span'); c.className = 'c'; c.textContent = `(${tracksIn(k).length})`;
+      b.appendChild(c);
+      b.addEventListener('click', () => onPick(k));
+      box.appendChild(b);
+    });
+  }
+
   function renderRound() {
-    const pool = tracks.filter((t) => !invalidIds.has(t.id));
-    const usable = pool.length ? pool : tracks;
-    const remaining = usable.filter((t) => !played.includes(t.id));
+    renderSeg('roundTabs', roundCat, (k) => { roundCat = k; renderRound(); });
+    const cat = roundCat;
+    const usable = usableTracks(cat);
+    const remaining = usable.filter((t) => !played[cat].includes(t.id));
     const count = $('roundCount');
-    if (!tracks.length) count.textContent = 'Ingen sanger';
-    else count.innerHTML = `<span>${remaining.length}</span> av ${usable.length} gjenstår`;
+    count.textContent = '';
+    if (!usable.length) count.textContent = 'Ingen sanger';
+    else {
+      const s = document.createElement('span'); s.textContent = remaining.length;
+      count.append(s, ` av ${usable.length} gjenstår`);
+    }
     const chips = $('roundChips');
     chips.textContent = '';
-    const currentId = nowPlaying && nowPlaying.mode === 'goal' ? nowPlaying.track.id : null;
-    // Gjenstående først, så spilte
-    const ordered = [...tracks].sort((a, b) => (played.includes(a.id) ? 1 : 0) - (played.includes(b.id) ? 1 : 0));
+    const currentId = nowPlaying && nowPlaying.mode === cat ? nowPlaying.track.id : null;
+    const list = tracksIn(cat);
+    const ordered = [...list].sort((a, b) => (played[cat].includes(a.id) ? 1 : 0) - (played[cat].includes(b.id) ? 1 : 0));
     ordered.forEach((t) => {
       const c = document.createElement('span');
-      const isPlayed = played.includes(t.id);
+      const isPlayed = played[cat].includes(t.id);
       c.className = 'chip' + (isPlayed ? ' played' : '') + (invalidIds.has(t.id) ? ' bad' : '') + (t.id === currentId ? ' current' : '');
       c.textContent = t.tittel + ' ';
       const sm = document.createElement('small'); sm.textContent = t.artist; c.appendChild(sm);
       c.title = isPlayed ? 'Spilt i denne runden' : invalidIds.has(t.id) ? invalidIds.get(t.id) : 'Gjenstår';
       chips.appendChild(c);
     });
-    $('resetRoundBtn').disabled = played.length === 0;
+    if (!list.length) {
+      const e = document.createElement('span'); e.className = 'muted small';
+      e.textContent = `Ingen sanger i «${CATS[cat].navn}» ennå – legg til under «Administrer sanger og spillelister».`;
+      chips.appendChild(e);
+    }
+    $('resetRoundBtn').disabled = played[cat].length === 0;
   }
 
   let editingId = null;
 
+  function setAdminCat(cat) {
+    adminCat = cat;
+    if (!editingId) $('fCat').value = cat;
+    renderTrackList();
+  }
+
   function renderTrackList() {
+    renderSeg('adminTabs', adminCat, setAdminCat);
+    const navn = CATS[adminCat].navn;
+    $('listTitle').textContent = `Låtliste – ${CATS[adminCat].ikon} ${navn}`;
+    $('plHint').textContent = `Sangene legges i «${navn}» (velg kategori over). Duplikater hoppes over. Starttid settes til 0:00 – juster per sang etterpå.`;
+    $('clearCatBtn').textContent = `Tøm «${navn}»`;
+    $('clearCatBtn').disabled = !tracksIn(adminCat).length;
+    $('adminSummary').textContent = '· ' + CAT_KEYS.map((k) => `${CATS[k].navn} ${tracksIn(k).length}`).join(' · ');
+    if (!editingId) $('formTitle').textContent = `Legg til enkeltsang`;
+
     const ul = $('trackList');
     ul.textContent = '';
-    $('adminSummary').textContent = `· ${tracks.length} sang${tracks.length === 1 ? '' : 'er'}`;
-    if (!tracks.length) {
+    const list = tracksIn(adminCat);
+    if (!list.length) {
       const li = document.createElement('li'); li.className = 'empty';
-      li.textContent = 'Ingen sanger ennå. Lim inn en Spotify-lenke over, eller importer en JSON-fil.';
+      li.textContent = `Ingen sanger i «${navn}» ennå. Lim inn en spilleliste eller en enkeltsang over, eller importer en JSON-fil.`;
       ul.appendChild(li);
       return;
     }
-    tracks.forEach((t, i) => {
+    list.forEach((t, i) => {
       const li = document.createElement('li');
       li.className = 'trk' + (t.id === editingId ? ' editing' : '');
       const n = document.createElement('div'); n.className = 'n'; n.textContent = i + 1;
@@ -1267,21 +1530,32 @@
     return b;
   }
 
-  function renderAll() { renderTrackList(); renderRound(); }
+  function renderSettings() {
+    $('sAuto').value = String(settings.autoStopSek);
+    $('sFade').checked = settings.autoStopFade;
+    CAT_KEYS.forEach((k) => { $('sVol-' + k).value = settings.vol[k]; });
+    renderButtons();
+  }
+
+  function renderAll() { renderTrackList(); renderRound(); renderButtons(); }
 
   /* =====================================================================
    * Administrer sanger
    * ===================================================================== */
   function readForm() {
-    const tid = parseTrackId($('fLink').value);
-    const secs = parseSeconds($('fDrop').value);
-    return { tid, secs, tittel: $('fTitle').value.trim(), artist: $('fArtist').value.trim() };
+    return {
+      tid: parseTrackId($('fLink').value),
+      secs: parseSeconds($('fDrop').value),
+      tittel: $('fTitle').value.trim(),
+      artist: $('fArtist').value.trim(),
+      kategori: CAT_KEYS.includes($('fCat').value) ? $('fCat').value : adminCat
+    };
   }
 
   function resetForm() {
     editingId = null;
     $('trackForm').reset();
-    $('formTitle').textContent = 'Legg til ny sang';
+    $('fCat').value = adminCat;
     $('saveTrackBtn').textContent = '➕ Legg til sang';
     $('cancelEditBtn').hidden = true;
     setLinkHint('', '');
@@ -1295,6 +1569,7 @@
     $('fLink').value = 'https://open.spotify.com/track/' + uriToId(t.spotifyUri);
     $('fTitle').value = t.tittel;
     $('fArtist').value = t.artist;
+    $('fCat').value = t.kategori;
     $('fDrop').value = (t.dropMs / 1000).toFixed(1);
     $('formTitle').textContent = 'Rediger: ' + t.tittel;
     $('saveTrackBtn').textContent = '💾 Lagre endringer';
@@ -1305,11 +1580,13 @@
     $('fDrop').focus();
   }
 
+  function removeFromPlayed(id) { CAT_KEYS.forEach((k) => { played[k] = played[k].filter((x) => x !== id); }); }
+
   function deleteTrack(id) {
     const t = tracks.find((x) => x.id === id);
     if (!t || !confirm(`Slette «${t.tittel}» fra låtlisten?`)) return;
     tracks = tracks.filter((x) => x.id !== id);
-    played = played.filter((x) => x !== id);
+    removeFromPlayed(id);
     invalidIds.delete(id);
     saveTracks(); savePlayed();
     if (editingId === id) resetForm();
@@ -1325,6 +1602,12 @@
   async function onLinkChange() {
     const raw = $('fLink').value.trim();
     if (!raw) { setLinkHint('', ''); return; }
+    if (parsePlaylistId(raw) && !parseTrackId(raw)) {
+      $('plLink').value = raw; $('fLink').value = '';
+      setLinkHint('Det var en spilleliste – den er flyttet til «Importer spilleliste» over.', 'ok');
+      $('plLink').focus();
+      return;
+    }
     const tid = parseTrackId(raw);
     if (!tid) { setLinkHint('Fant ingen Track ID. Lim inn en lenke som https://open.spotify.com/track/… eller spotify:track:…', 'bad'); return; }
     setLinkHint('Track ID: ' + tid, 'ok');
@@ -1339,7 +1622,8 @@
       setLinkHint(`✓ Fant: ${tr.name} – ${artists} (${fmtMs(tr.duration_ms)})${tr.is_playable === false ? ' · ⚠ ikke tilgjengelig i ditt land' : ''}`, tr.is_playable === false ? 'bad' : 'ok');
     } catch (e) {
       if (my !== metaReq) return;
-      setLinkHint(e.status === 404 || e.status === 400 ? 'Fant ikke sporet hos Spotify – sjekk lenken.' : 'Track ID: ' + tid + ' (kunne ikke hente info)', e.status === 404 || e.status === 400 ? 'bad' : 'ok');
+      const notFound = e.status === 404 || e.status === 400;
+      setLinkHint(notFound ? 'Fant ikke sporet hos Spotify – sjekk lenken.' : 'Track ID: ' + tid + ' (kunne ikke hente info)', notFound ? 'bad' : 'ok');
     }
   }
 
@@ -1350,6 +1634,7 @@
     if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); $('fDrop').focus(); return; }
     clearNotice('form');
     const data = {
+      kategori: f.kategori,
       tittel: f.tittel || 'Ukjent tittel',
       artist: f.artist,
       spotifyUri: 'spotify:track:' + f.tid,
@@ -1358,15 +1643,17 @@
     if (editingId) {
       const idx = tracks.findIndex((t) => t.id === editingId);
       if (idx >= 0) {
+        if (tracks[idx].kategori !== data.kategori) removeFromPlayed(editingId);
         tracks[idx] = { ...tracks[idx], ...data };
         invalidIds.delete(editingId);
         notify(`«${data.tittel}» er oppdatert.`, 'success');
       }
     } else {
       tracks.push({ id: newId(), ...data });
-      notify(`«${data.tittel}» er lagt til.`, 'success');
+      notify(`«${data.tittel}» er lagt til i «${CATS[data.kategori].navn}».`, 'success');
     }
-    saveTracks();
+    adminCat = data.kategori;
+    saveTracks(); savePlayed();
     resetForm();
     renderAll();
   }
@@ -1376,7 +1663,7 @@
     if (!f.tid) { setLinkHint('Lim inn en gyldig Spotify-lenke først.', 'bad'); return; }
     if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); return; }
     unlockAudio();
-    playTrack({ id: editingId || 'preview', tittel: f.tittel || 'Forhåndsvisning', artist: f.artist, spotifyUri: 'spotify:track:' + f.tid, dropMs: Math.round(f.secs * 1000) }, 'test');
+    playTrack({ id: editingId || 'preview', kategori: f.kategori, tittel: f.tittel || 'Forhåndsvisning', artist: f.artist, spotifyUri: 'spotify:track:' + f.tid, dropMs: Math.round(f.secs * 1000) }, 'test');
   }
 
   async function useCurrentPosition() {
@@ -1390,21 +1677,66 @@
     } catch (e) { notify('Kunne ikke lese posisjonen: ' + e.message, 'error', { key: 'form' }); }
   }
 
+  async function importPlaylist() {
+    const raw = $('plLink').value.trim();
+    const pid = parsePlaylistId(raw);
+    if (!pid) {
+      notify('Fant ingen spilleliste-ID. Lim inn en lenke som https://open.spotify.com/playlist/… (Spotify: ••• → Del → Kopier lenke til spilleliste).', 'error', { key: 'playlist' });
+      return;
+    }
+    if (!tokens) {
+      notify('Du må logge inn med Spotify for å hente spillelister.', 'error', { key: 'playlist' });
+      openSetup();
+      return;
+    }
+    const cat = adminCat;
+    const btn = $('plBtn');
+    btn.disabled = true; btn.textContent = '⏳ Henter …';
+    try {
+      const { name, tracks: list, skipped } = await fetchPlaylist(pid);
+      const existing = new Set(tracksIn(cat).map((t) => t.spotifyUri));
+      let added = 0, dupes = 0;
+      list.forEach((t) => {
+        if (existing.has(t.spotifyUri)) { dupes++; return; }
+        existing.add(t.spotifyUri);
+        tracks.push({ id: newId(), kategori: cat, ...t });
+        added++;
+      });
+      saveTracks();
+      renderAll();
+      const parts = [];
+      if (dupes) parts.push(`${dupes} fantes fra før`);
+      if (skipped) parts.push(`${skipped} lokale filer/podkaster hoppet over`);
+      notify(`La til ${added} sanger fra «${name || 'spillelisten'}» i «${CATS[cat].navn}»${parts.length ? ' (' + parts.join(', ') + ')' : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
+      $('plLink').value = '';
+      if (added) validateTracks();
+    } catch (e) {
+      let msg;
+      if (e.status === 404) msg = 'Fant ikke spillelisten. Sjekk lenken. Merk: Spillelister laget av Spotify selv (f.eks. «Today\'s Top Hits», «Mix»-lister og «Radio») kan ikke hentes av utvikler-apper – lag en kopi i ditt eget bibliotek (velg alle sangene → Legg til i spilleliste → Ny spilleliste) og importer den.';
+      else if (e.status === 403) msg = 'Ingen tilgang til spillelisten. Er den privat og eid av en annen konto? Gjør den offentlig, eller lag en kopi i din egen konto.';
+      else msg = explainError(e);
+      notify(msg, 'error', { key: 'playlist' });
+    } finally {
+      btn.disabled = false; btn.textContent = '📥 Hent sanger';
+    }
+  }
+
   function exportJson() {
     const payload = {
       app: 'idrettshall-soundboard',
-      versjon: 1,
+      versjon: 2,
       eksportert: new Date().toISOString(),
-      tracks: tracks.map(({ id, tittel, artist, spotifyUri, dropMs }) => ({ id, tittel, artist, spotifyUri, dropMs }))
+      innstillinger: settings,
+      tracks: tracks.map(({ id, kategori, tittel, artist, spotifyUri, dropMs }) => ({ id, kategori, tittel, artist, spotifyUri, dropMs }))
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'malsanger-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = 'soundboard-sanger-' + new Date().toISOString().slice(0, 10) + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    notify(`Eksporterte ${tracks.length} sanger.`, 'success');
+    notify(`Eksporterte ${tracks.length} sanger og innstillingene.`, 'success');
   }
 
   async function importJson(file) {
@@ -1414,13 +1746,15 @@
       const data = JSON.parse(text);
       const list = Array.isArray(data) ? data : (data && (data.tracks || data.sanger || data.songs));
       if (!Array.isArray(list)) throw new Error('Fant ingen låtliste i fila.');
-      const imported = dedupeIds(list.map(normalizeTrack).filter(Boolean));
+      const imported = dedupeIds(list.map((t) => normalizeTrack(t)).filter(Boolean));
       const skipped = list.length - imported.length;
       if (!imported.length) throw new Error('Ingen gyldige sanger i fila.');
-      if (!confirm(`Importere ${imported.length} sanger fra «${file.name}»?\nDette erstatter dagens liste på ${tracks.length} sanger.`)) return;
+      const hasSettings = data && !Array.isArray(data) && data.innstillinger && typeof data.innstillinger === 'object';
+      if (!confirm(`Importere ${imported.length} sanger fra «${file.name}»${hasSettings ? ' (inkl. innstillinger)' : ''}?\nDette erstatter dagens liste på ${tracks.length} sanger.`)) return;
       tracks = imported;
-      played = [];
+      played = emptyPlayed();
       invalidIds.clear();
+      if (hasSettings) { settings = sanitizeSettings(data.innstillinger); saveSettings(); renderSettings(); }
       saveTracks(); savePlayed();
       resetForm();
       renderAll();
@@ -1431,6 +1765,15 @@
     } finally {
       $('importFile').value = '';
     }
+  }
+
+  function onSettingsChange() {
+    const a = parseSeconds($('sAuto').value);
+    const vol = {};
+    CAT_KEYS.forEach((k) => { vol[k] = $('sVol-' + k).value; });
+    settings = sanitizeSettings({ autoStopSek: Number.isFinite(a) ? a : settings.autoStopSek, autoStopFade: $('sFade').checked, vol });
+    saveSettings();
+    renderButtons();
   }
 
   /* =====================================================================
@@ -1446,6 +1789,8 @@
     }
     return false;
   }
+
+  function pressAnim(id) { const b = $(id); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120); }
 
   function bindEvents() {
     $('redirectUri').textContent = REDIRECT_URI;
@@ -1477,13 +1822,15 @@
     $('loginBtn').addEventListener('click', login);
     $('logoutBtn').addEventListener('click', () => { if (confirm('Logge ut av Spotify på denne enheten?')) logout(false); });
 
-    $('goalBtn').addEventListener('click', () => { unlockAudio(); goal(); });
+    $('goalBtn').addEventListener('click', () => { unlockAudio(); playCategory('mal'); });
+    $('timeoutBtn').addEventListener('click', () => { unlockAudio(); playCategory('timeout'); });
+    $('pauseBtn').addEventListener('click', () => { unlockAudio(); playCategory('pause'); });
     $('fadeBtn').addEventListener('click', () => { unlockAudio(); fadeOut(); });
     $('killBtn').addEventListener('click', () => { emergencyStop(); });
     $('unlockPill').addEventListener('click', () => { unlockAudio(); });
     $('resetRoundBtn').addEventListener('click', () => {
-      played = []; savePlayed(); renderRound();
-      notify('Runden er nullstilt – alle sangene er tilgjengelige igjen.', 'info', { key: 'round' });
+      played[roundCat] = []; savePlayed(); renderRound();
+      notify(`Runden for «${CATS[roundCat].navn}» er nullstilt – alle sangene er tilgjengelige igjen.`, 'info', { key: 'round' });
     });
 
     const vol = $('volume');
@@ -1493,8 +1840,14 @@
       masterVolume = clampVol(vol.value);
       $('volumeVal').textContent = masterVolume + ' %';
       store.set(LS.volume, masterVolume);
-      if (player && !isFading) player.setVolume(masterVolume / 100).catch(() => {});
+      if (player && !isFading) player.setVolume(effectiveVolume()).catch(() => {});
     });
+
+    ['sAuto', 'sVol-mal', 'sVol-timeout', 'sVol-pause'].forEach((id) => $(id).addEventListener('change', () => { onSettingsChange(); renderSettings(); }));
+    $('sFade').addEventListener('change', onSettingsChange);
+
+    $('plBtn').addEventListener('click', importPlaylist);
+    $('plLink').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); importPlaylist(); } });
 
     $('trackForm').addEventListener('submit', onSubmit);
     $('fLink').addEventListener('change', onLinkChange);
@@ -1505,10 +1858,19 @@
     $('exportBtn').addEventListener('click', exportJson);
     $('importBtn').addEventListener('click', () => $('importFile').click());
     $('importFile').addEventListener('change', (e) => importJson(e.target.files && e.target.files[0]));
+    $('clearCatBtn').addEventListener('click', () => {
+      const n = tracksIn(adminCat).length;
+      if (!n || !confirm(`Slette alle ${n} sangene i «${CATS[adminCat].navn}»?`)) return;
+      tracks = tracks.filter((t) => t.kategori !== adminCat);
+      played[adminCat] = [];
+      saveTracks(); savePlayed(); resetForm(); renderAll();
+    });
     $('defaultsBtn').addEventListener('click', () => {
-      if (!confirm('Erstatte hele låtlisten med de 6 eksempellåtene?')) return;
-      tracks = DEFAULT_TRACKS.map((t) => ({ ...t }));
-      played = []; invalidIds.clear();
+      if (!confirm('Erstatte alle MÅL-sangene med de 6 eksempellåtene? (Timeout og Pause beholdes.)')) return;
+      tracks = tracks.filter((t) => t.kategori !== 'mal').concat(DEFAULT_TRACKS.map((t) => ({ ...t })));
+      tracks = dedupeIds(tracks);
+      played.mal = []; invalidIds.clear();
+      adminCat = 'mal';
       saveTracks(); savePlayed(); resetForm(); renderAll();
       validateTracks();
     });
@@ -1531,16 +1893,17 @@
       if (isTypingTarget(e.target)) return;
       const isSpace = e.code === 'Space' || e.key === ' ';
       const k = (e.key || '').toLowerCase();
-      if (isSpace || k === 'm') {
-        e.preventDefault();
-        if (e.repeat) return;
-        const b = $('goalBtn'); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120);
-        goal();
-      } else if (k === 's') {
-        e.preventDefault();
-        if (e.repeat) return;
-        fadeOut();
-      }
+      const actions = {
+        m: () => { pressAnim('goalBtn'); playCategory('mal'); },
+        t: () => { pressAnim('timeoutBtn'); playCategory('timeout'); },
+        p: () => { pressAnim('pauseBtn'); playCategory('pause'); },
+        s: () => fadeOut()
+      };
+      const act = isSpace ? actions.m : actions[k];
+      if (!act) return;
+      e.preventDefault();
+      if (e.repeat) return;
+      act();
     });
     document.addEventListener('keyup', (e) => {
       if ((e.code === 'Space' || e.key === ' ') && !isTypingTarget(e.target)) e.preventDefault();
@@ -1553,7 +1916,10 @@
       }
     });
 
-    setInterval(() => { if (liveState && !liveState.paused) updateProgress(); }, 250);
+    setInterval(() => {
+      if (liveState && !liveState.paused) updateProgress();
+      updateAutoTag();
+    }, 250);
   }
 
   /* =====================================================================
@@ -1562,6 +1928,8 @@
   async function start() {
     bindEvents();
     renderEnvWarning();
+    renderSettings();
+    $('fCat').value = adminCat;
     renderAll();
     renderNowPlaying();
     setStatus('off', 'Ikke tilkoblet');
@@ -1570,7 +1938,6 @@
     await handleRedirect();
 
     if (tokens) {
-      // Forny med en gang hvis tokenet allerede er utløpt
       if (Date.now() > tokens.expires_at - 60 * 1000) {
         try { await refreshToken(); } catch { /* varsel vises allerede */ }
       } else scheduleRefresh();
