@@ -354,13 +354,21 @@
       <div class="hint" id="clientIdHint">Lagres automatisk på denne enheten.</div>
       <div id="accountBox" class="okbox" hidden></div>
 
+      <label class="lbl" for="outSel">Avspillingsenhet (hvor musikken spilles)</label>
+      <div class="row">
+        <select id="outSel" class="grow"></select>
+        <button class="btn" id="outRefresh" type="button">↻ Oppdater</button>
+      </div>
+      <div class="hint" id="outHint"></div>
+
       <h3>Slik setter du opp (én gang)</h3>
       <ol class="steps">
         <li>Gå til <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> og trykk <b>Create app</b>.</li>
         <li>Lim inn <b>Redirect URI</b>-en over under <b>Redirect URIs</b> (nøyaktig lik, inkludert evt. avsluttende <code>/</code>), og huk av for <b>Web API</b> og <b>Web Playback SDK</b>.</li>
         <li>Kopier <b>Client ID</b> fra appens innstillinger og lim den inn her. (Client Secret trengs <b>ikke</b>.)</li>
         <li>Mens appen er i «Development mode»: legg til e-posten til Spotify-kontoen som skal brukes under <b>User Management</b>.</li>
-        <li>Kontoen må ha <b>Spotify Premium</b>. Bruk en nettleser på PC/Mac (Chrome, Edge, Firefox eller Safari) – mobilnettlesere støttes ikke av Spotify sin nettleserspiller.</li>
+        <li>Kontoen må ha <b>Spotify Premium</b>. På PC/Mac (Chrome, Edge, Firefox, Safari) kan musikken spilles rett i nettleseren.</li>
+        <li><b>iPad / mobil:</b> nettleseren kan ikke spille selv – appen blir da en <b>fjernkontroll</b>. Åpne Spotify-appen (på iPaden eller en PC/høyttaler i hallen), start en sang og sett på pause, trykk <b>↻ Oppdater</b> og velg enheten under «Avspillingsenhet».</li>
       </ol>
     </div>
   </details>
@@ -584,6 +592,7 @@
     played: 'soundboard.played',
     volume: 'soundboard.volume',
     settings: 'soundboard.settings',
+    output: 'soundboard.output',
     verifier: 'soundboard.pkceVerifier',
     state: 'soundboard.pkceState'
   };
@@ -696,6 +705,17 @@
   let masterVolume = clampVol(store.get(LS.volume, 100));
   let tokens = store.get(LS.tokens, null);
   let profile = null;
+
+  // iPad/iPhone/Android: Spotify sin nettleserspiller støttes ikke → bruk fjernkontroll som standard
+  const IS_MOBILE_OS = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let output = (() => {
+    const o = store.get(LS.output, null);
+    if (o && (o.mode === 'browser' || o.mode === 'remote')) {
+      return { mode: o.mode, deviceId: typeof o.deviceId === 'string' ? o.deviceId : null, deviceName: typeof o.deviceName === 'string' ? o.deviceName : null };
+    }
+    return { mode: IS_MOBILE_OS ? 'remote' : 'browser', deviceId: null, deviceName: null };
+  })();
 
   let player = null;
   let deviceId = null;
@@ -1003,6 +1023,7 @@
     if (e.status === 401) return 'Spotify-tilgangen har utløpt. Prøver å fornye … Logg inn på nytt hvis feilen gjentar seg.';
     if (e.status === 403 && (e.reason === 'PREMIUM_REQUIRED' || /premium/i.test(e.message))) return PREMIUM_MSG;
     if (e.status === 403) return 'Spotify avviste kommandoen (' + e.message + '). Sjekk at kontoen har Premium og er lagt til under «User Management» i Spotify Dashboard.';
+    if (e.status === 404 && isRemote()) return `Spotify finner ikke «${targetName()}». Åpne Spotify-appen på enheten, start en sang og sett den på pause, trykk «↻ Oppdater» under Avspillingsenhet (Spotify Oppsett) og prøv igjen.`;
     if (e.status === 404) return 'Spotify finner ikke nettleserspilleren, selv etter ny tilkobling. Last inn siden på nytt (F5). Hjelper ikke det: slå av annonseblokkering for siden, lukk andre faner med soundboardet, og i Firefox må «Spill av DRM-kontrollert innhold» være slått på.';
     if (e.status === 429) return 'Spotify ber oss vente litt (for mange forespørsler). Prøv igjen om noen sekunder.';
     if (e.status >= 500) return 'Spotify har tekniske problemer akkurat nå (' + e.status + '). Prøv igjen.';
@@ -1073,6 +1094,10 @@
 
   /** Stille helsesjekk: oppdager en «død» spiller før noen trykker MÅL!. */
   async function healthCheck() {
+    if (isRemote()) {
+      if (tokens && document.visibilityState === 'visible' && !busy) await refreshDevices(true);
+      return;
+    }
     if (!tokens || !player || recoverPromise || busy || isFading || document.visibilityState !== 'visible') return;
     const ok = await deviceIsRegistered();
     if (ok === false) {
@@ -1081,10 +1106,177 @@
     }
   }
 
+  /* =====================================================================
+   * Avspillingsenhet: nettleseren (Web Playback SDK) eller fjernkontroll (Spotify Connect)
+   * ===================================================================== */
+  const enc = encodeURIComponent;
+  const isRemote = () => output.mode === 'remote';
+  const targetId = () => (isRemote() ? output.deviceId : deviceId);
+  const targetName = () => (isRemote() ? (output.deviceName || 'valgt enhet') : DEVICE_NAME);
+  let devicesCache = [];
+  let remoteVolUnsupported = false;
+  let lastRemoteVolume = null; // 0–1, sist kjente volum på fjernenheten
+  let volDebounce = null;
+
+  function saveOutput() { store.set(LS.output, output); }
+
+  /** Volum 0–1 på aktiv enhet. */
+  async function outSetVolume(v) {
+    v = Math.max(0, Math.min(1, v));
+    if (!isRemote()) { if (player) await player.setVolume(v); return; }
+    if (remoteVolUnsupported || !output.deviceId) return;
+    try {
+      await api('PUT', `/me/player/volume?volume_percent=${Math.round(v * 100)}&device_id=${enc(output.deviceId)}`);
+      lastRemoteVolume = v;
+    } catch (e) {
+      if (e.status === 403 || e.status === 400) {
+        remoteVolUnsupported = true;
+        notify(`Spotify tillater ikke volumstyring av «${targetName()}» (gjelder bl.a. iPad og iPhone). Myk fade og egne volumnivåer for Timeout/Pause virker derfor ikke – musikken stoppes direkte, og volumet styres med knappene på enheten.`, 'warn', { key: 'vol' });
+        renderOutput();
+      } else if (e.status !== 404) throw e;
+    }
+  }
+  async function outGetVolume() {
+    if (!isRemote()) return player ? player.getVolume() : effectiveVolume();
+    return lastRemoteVolume ?? effectiveVolume();
+  }
+  async function outPause() {
+    if (!isRemote()) { if (player) await player.pause(); return; }
+    try { await api('PUT', '/me/player/pause?device_id=' + enc(output.deviceId)); }
+    catch (e) { if (e.status !== 403) throw e; } // 403 = allerede pauset
+    if (liveState) { liveState.position = currentPos(); liveState.paused = true; liveState.stamp = performance.now(); }
+  }
+  async function outResume() {
+    if (!isRemote()) { if (player) await player.resume(); return; }
+    try { await api('PUT', '/me/player/play?device_id=' + enc(output.deviceId)); }
+    catch (e) { if (e.status !== 403) throw e; }
+    if (liveState) { liveState.paused = false; liveState.stamp = performance.now(); }
+  }
+  async function outSeek(ms) {
+    ms = Math.max(0, Math.round(ms));
+    if (!isRemote()) { if (player) await player.seek(ms); return; }
+    await api('PUT', `/me/player/seek?position_ms=${ms}&device_id=${enc(output.deviceId)}`);
+    if (liveState) { liveState.position = ms; liveState.stamp = performance.now(); updateProgress(); }
+  }
+  async function outToggle() {
+    if (!isRemote()) { if (player) await player.togglePlay(); return; }
+    if (liveState && !liveState.paused) await outPause(); else await outResume();
+  }
+  function currentPos() {
+    const ls = liveState;
+    if (!ls) return 0;
+    return ls.paused ? ls.position : Math.min(ls.duration || Infinity, ls.position + (performance.now() - ls.stamp));
+  }
+  /** Fersk avspillingsstatus: { position, duration, uri, linkedUri } eller null. */
+  async function outGetState() {
+    if (!isRemote()) {
+      if (!player) return null;
+      const st = await player.getCurrentState();
+      if (!st) return null;
+      const cur = st.track_window && st.track_window.current_track;
+      return { position: st.position, duration: st.duration, uri: cur && cur.uri, linkedUri: cur && cur.linked_from && cur.linked_from.uri };
+    }
+    const s = await api('GET', '/me/player?market=from_token');
+    applyRemoteState(s);
+    if (!s || !s.item || !s.device || s.device.id !== output.deviceId) return null;
+    return { position: s.progress_ms, duration: s.item.duration_ms, uri: s.item.uri, linkedUri: s.item.linked_from && s.item.linked_from.uri };
+  }
+  function applyRemoteState(s) {
+    if (!s || !s.item || !s.device || s.device.id !== output.deviceId) {
+      if (liveState) { liveState = null; renderNowPlaying(); }
+      return;
+    }
+    if (typeof s.device.volume_percent === 'number') lastRemoteVolume = s.device.volume_percent / 100;
+    if (s.device.supports_volume === false && !remoteVolUnsupported) { remoteVolUnsupported = true; renderOutput(); }
+    const it = s.item;
+    liveState = {
+      paused: !s.is_playing,
+      position: s.progress_ms || 0,
+      duration: it.duration_ms,
+      stamp: performance.now(),
+      uri: it.uri,
+      linkedUri: it.linked_from && it.linked_from.uri,
+      name: it.name,
+      artists: (it.artists || []).map((a) => a.name).join(', '),
+      image: it.album && it.album.images && it.album.images.length ? it.album.images[0].url : null
+    };
+    if (s.shuffle_state && shuffleOffFor === output.deviceId) { shuffleOffFor = null; ensureShuffleOff().catch(() => {}); }
+    renderNowPlaying();
+  }
+
+  /** Henter Spotify-enhetene og oppdaterer valglisten/statusen. */
+  async function refreshDevices(quiet) {
+    if (!tokens) return [];
+    try {
+      const d = await api('GET', '/me/player/devices');
+      devicesCache = ((d && d.devices) || []).filter((x) => x.id && x.id !== deviceId);
+    } catch (e) {
+      if (!quiet) notify('Kunne ikke hente Spotify-enheter: ' + explainError(e), 'error', { key: 'devices' });
+      return devicesCache;
+    }
+    if (isRemote()) {
+      let dev = devicesCache.find((x) => x.id === output.deviceId);
+      if (!dev && output.deviceName) {
+        dev = devicesCache.find((x) => x.name === output.deviceName);
+        if (dev) { output.deviceId = dev.id; saveOutput(); }
+      }
+      if (dev) {
+        if (typeof dev.volume_percent === 'number') lastRemoteVolume = dev.volume_percent / 100;
+        if (dev.supports_volume === false) remoteVolUnsupported = true;
+      }
+    }
+    renderOutput();
+    return devicesCache;
+  }
+
+  /** Vekker fjernenheten (gjør den aktiv) før avspilling. */
+  async function remoteActivate() {
+    try {
+      await api('PUT', '/me/player', { device_ids: [output.deviceId], play: false });
+    } catch (e) {
+      if (e.status === 404) { await refreshDevices(true); e.remoteMissing = true; }
+      throw e;
+    }
+    await sleep(500);
+  }
+
+  function setOutput(mode, dev) {
+    clearAutoStop();
+    output = { mode, deviceId: dev ? dev.id : null, deviceName: dev ? dev.name : null };
+    saveOutput();
+    remoteVolUnsupported = !!(dev && dev.supports_volume === false);
+    lastRemoteVolume = dev && typeof dev.volume_percent === 'number' ? dev.volume_percent / 100 : null;
+    shuffleOffFor = null;
+    liveState = null;
+    clearNotice('vol');
+    if (mode === 'remote') {
+      if (player) { try { player.disconnect(); } catch { /* ignorer */ } }
+      player = null; deviceId = null;
+      startRemotePoll();
+    } else if (tokens) {
+      initPlayer();
+    }
+    renderOutput();
+    renderNowPlaying();
+  }
+
+  let remotePollTimer = null;
+  function startRemotePoll() {
+    clearTimeout(remotePollTimer);
+    const tick = async () => {
+      if (isRemote() && tokens && output.deviceId && document.visibilityState === 'visible') {
+        try { await outGetState(); } catch { /* ignorer – prøver igjen */ }
+      }
+      if (isRemote()) remotePollTimer = setTimeout(tick, finder.active ? 1000 : 2500);
+    };
+    tick();
+  }
+
   async function ensureShuffleOff() {
-    if (!deviceId || shuffleOffFor === deviceId) return;
-    await api('PUT', '/me/player/shuffle?state=false&device_id=' + encodeURIComponent(deviceId));
-    shuffleOffFor = deviceId;
+    const id = targetId();
+    if (!id || shuffleOffFor === id) return;
+    await api('PUT', '/me/player/shuffle?state=false&device_id=' + enc(id));
+    shuffleOffFor = id;
   }
 
   async function loadProfile() {
@@ -1172,7 +1364,7 @@
    * Spotify Web Playback SDK
    * ===================================================================== */
   function initPlayer() {
-    if (player || sdkLoading || !tokens) return;
+    if (player || sdkLoading || !tokens || isRemote()) return;
     setStatus('wait', 'Kobler til Spotify …');
     window.onSpotifyWebPlaybackSDKReady = createPlayer;
     if (window.Spotify && window.Spotify.Player) { createPlayer(); return; }
@@ -1190,7 +1382,7 @@
 
   function createPlayer() {
     sdkLoading = false;
-    if (player || !tokens) return;
+    if (player || !tokens || isRemote()) return;
     player = new window.Spotify.Player({
       name: DEVICE_NAME,
       getOAuthToken: (cb) => { getToken().then(cb).catch(() => {}); },
@@ -1293,36 +1485,53 @@
       openSetup();
       return false;
     }
-    if (!player && sdkLoading) {
+    if (isRemote() && !output.deviceId) {
+      notify('Velg hvilken Spotify-enhet som skal spille musikken under «Spotify Oppsett» → «Avspillingsenhet».', 'warn', { key: 'play' });
+      openSetup();
+      return false;
+    }
+    if (!isRemote() && !player && sdkLoading) {
       notify('Nettleserspilleren starter fortsatt. Vent til statusen øverst er grønn, og prøv igjen.', 'warn', { key: 'play' });
       return false;
     }
     cancelFade();
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     const body = { uris: [track.spotifyUri], position_ms: Math.max(0, Math.round(track.dropMs || 0)) };
-    const playPath = () => '/me/player/play?device_id=' + encodeURIComponent(deviceId);
+    const playPath = () => '/me/player/play?device_id=' + enc(targetId());
     try {
-      if (!player || !deviceId) {
+      if (!isRemote() && (!player || !deviceId)) {
         notify('Kobler til nettleserspilleren …', 'info', { key: 'play', timeout: 3000 });
         await recoverDevice();
       }
       await Promise.all([
         ensureShuffleOff().catch(() => {}),
-        player.setVolume(effectiveVolume()).catch(() => {})
+        outSetVolume(effectiveVolume()).catch(() => {})
       ]);
       try {
         await api('PUT', playPath(), body);
       } catch (e) {
         if (e.status !== 404) throw e;
-        // Spotify kjenner ikke enheten: koble til på nytt og prøv én gang til
-        notify('Spotify mistet nettleserspilleren – kobler til på nytt …', 'info', { key: 'play', timeout: 4000 });
-        await recoverDevice();
-        await api('PUT', playPath(), body);
+        if (isRemote()) {
+          // Fjernenheten sover: vekk den og prøv én gang til
+          await remoteActivate();
+          await api('PUT', playPath(), body);
+          ensureShuffleOff().catch(() => {});
+          outSetVolume(effectiveVolume()).catch(() => {});
+        } else {
+          // Spotify kjenner ikke nettleserspilleren: koble til på nytt og prøv én gang til
+          notify('Spotify mistet nettleserspilleren – kobler til på nytt …', 'info', { key: 'play', timeout: 4000 });
+          await recoverDevice();
+          await api('PUT', playPath(), body);
+        }
       }
     } catch (e) {
-      if (e.status === 404) setStatus('off', 'Spilleren ikke funnet – klikk for å prøve igjen');
+      if (e.status === 404) setStatus('off', isRemote() ? `Fant ikke «${targetName()}»` : 'Spilleren ikke funnet – klikk for å prøve igjen');
       notify(explainError(e), 'error', { key: 'play' });
       return false;
+    }
+    if (isRemote()) {
+      liveState = { paused: false, position: body.position_ms, duration: 0, stamp: performance.now(), uri: track.spotifyUri, name: track.tittel, artists: track.artist, image: liveState && liveState.uri === track.spotifyUri ? liveState.image : null };
+      setTimeout(() => outGetState().catch(() => {}), 700);
     }
     clearNotice('play'); clearNotice('playback');
     nowPlaying = { track, mode, at: Date.now() };
@@ -1406,7 +1615,8 @@
   }
 
   async function fadeOut(durationMs = FADE_MS, fromAuto = false) {
-    if (!player) { return emergencyStop(); }
+    // Uten volumkontroll (f.eks. Spotify-appen på iPad) kan vi ikke fade – stopp direkte.
+    if (isRemote() ? (!output.deviceId || remoteVolUnsupported) : !player) { return emergencyStop(); }
     if (!fromAuto) clearAutoStop();
     if (isFading) return;
     const my = ++fadeToken;
@@ -1414,23 +1624,26 @@
     $('fadeBtn').classList.add('fading');
     try {
       let start = effectiveVolume();
-      try { const v = await player.getVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk beregnet volum */ }
-      const stepMs = durationMs / FADE_STEPS; // standard: 15 steg à 100 ms
+      try { const v = await outGetVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk beregnet volum */ }
+      // Nettleser: 15 steg à 100 ms. Fjernenhet: færre steg pga. nettverksforsinkelse.
+      const steps = isRemote() ? 8 : FADE_STEPS;
+      const stepMs = durationMs / steps;
       const t0 = performance.now();
-      for (let i = 1; i <= FADE_STEPS; i++) {
+      for (let i = 1; i <= steps; i++) {
         await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
         if (my !== fadeToken) return;
-        await player.setVolume(Math.max(0, start * (1 - i / FADE_STEPS)));
+        await outSetVolume(start * (1 - i / steps));
+        if (isRemote() && remoteVolUnsupported) break;
       }
       if (my !== fadeToken) return;
-      await player.pause();
+      await outPause();
       await sleep(150);
       if (my !== fadeToken) return;
       volFactor = 1;
-      await player.setVolume(masterVolume / 100); // klar til neste mål
+      await outSetVolume(masterVolume / 100); // klar til neste mål
     } catch (e) {
       notify('Fade-out feilet: ' + (e && e.message ? e.message : e), 'error');
-      try { await player.pause(); await player.setVolume(masterVolume / 100); } catch { /* ignorer */ }
+      try { await outPause(); await outSetVolume(masterVolume / 100); } catch { /* ignorer */ }
     } finally {
       if (my === fadeToken) {
         isFading = false;
@@ -1443,13 +1656,13 @@
   async function emergencyStop() {
     cancelFade();
     try {
-      if (player) await player.pause();
+      if (isRemote() ? output.deviceId : player) await outPause();
       else if (tokens) await api('PUT', '/me/player/pause');
     } catch (e) {
       if (e.status !== 403) notify(explainError(e), 'error', { key: 'play' });
     }
     volFactor = 1;
-    if (player) { try { await player.setVolume(masterVolume / 100); } catch { /* ignorer */ } }
+    try { await outSetVolume(masterVolume / 100); } catch { /* ignorer */ }
   }
 
   /* =====================================================================
@@ -1483,7 +1696,40 @@
     $('setupSummary').textContent = state === 'on' ? '· tilkoblet' : tokens ? '· ' + text.toLowerCase() : '· ikke innlogget';
   }
 
-  function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked); }
+  function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked && !isRemote()); }
+
+  const DEVICE_ICONS = { computer: '💻', smartphone: '📱', tablet: '📱', speaker: '🔊', tv: '📺', avr: '🔊', stb: '📺', audiodongle: '🔊', gameconsole: '🎮', castvideo: '📺', castaudio: '🔊', automobile: '🚗' };
+
+  function renderOutput() {
+    const sel = $('outSel');
+    sel.textContent = '';
+    const add = (value, text) => { const o = document.createElement('option'); o.value = value; o.textContent = text; sel.appendChild(o); return o; };
+    add('browser', `🌐 Denne nettleseren («${DEVICE_NAME}»)${IS_MOBILE_OS ? ' – støttes ikke her' : ''}`);
+    devicesCache.forEach((d) => {
+      add('dev:' + d.id, `${DEVICE_ICONS[(d.type || '').toLowerCase()] || '🎵'} ${d.name} (${d.type || 'enhet'})${d.is_active ? ' · aktiv' : ''}`);
+    });
+    const found = isRemote() && devicesCache.some((d) => d.id === output.deviceId);
+    if (isRemote() && output.deviceId && !found) add('dev:' + output.deviceId, `⚠ ${output.deviceName || 'Valgt enhet'} – ikke funnet nå`);
+    if (isRemote() && !output.deviceId) add('', '— Velg enhet —');
+    sel.value = isRemote() ? (output.deviceId ? 'dev:' + output.deviceId : '') : 'browser';
+
+    const hint = $('outHint');
+    if (isRemote()) {
+      hint.className = 'hint' + (found ? ' ok' : ' bad');
+      hint.textContent = !output.deviceId
+        ? 'Velg enheten som skal spille musikken. Ser du den ikke: åpne Spotify-appen på enheten, start en sang og sett den på pause, og trykk «↻ Oppdater».'
+        : found
+          ? `Fjernkontroll: musikken spilles av «${output.deviceName}».${remoteVolUnsupported ? ' ⚠ Denne enheten tillater ikke volumstyring – fade og Timeout/Pause-volum virker ikke, og STOPP kutter direkte.' : ''} Hold Spotify-appen åpen på enheten.`
+          : `«${output.deviceName}» er ikke synlig for Spotify akkurat nå. Åpne Spotify-appen på enheten, spill av noe og sett på pause, og trykk «↻ Oppdater».`;
+      setStatus(found ? 'on' : 'off', found ? `Fjernkontroll → ${output.deviceName}` : output.deviceId ? `Fant ikke «${output.deviceName}»` : 'Velg avspillingsenhet');
+    } else {
+      hint.className = 'hint' + (IS_MOBILE_OS ? ' bad' : '');
+      hint.textContent = IS_MOBILE_OS
+        ? 'Spotify sin nettleserspiller virker ikke på iPad/iPhone/Android. Velg Spotify-appen på denne enheten eller en PC/høyttaler i hallen i listen.'
+        : 'Musikken spilles direkte i denne nettleseren. Velg en annen enhet for å bruke appen som fjernkontroll.';
+    }
+    renderUnlock();
+  }
   function openSetup() { $('setupPanel').open = true; }
 
   function renderAuth() {
@@ -1831,13 +2077,12 @@
   }
 
   async function useCurrentPosition() {
-    if (!player) { notify('Spilleren er ikke tilkoblet.', 'warn', { key: 'form' }); return; }
+    if (isRemote() ? !output.deviceId : !player) { notify('Spilleren er ikke tilkoblet.', 'warn', { key: 'form' }); return; }
     try {
-      const st = await player.getCurrentState();
-      if (!st) { notify('Ingenting spilles i nettleseren akkurat nå. Start sangen med «Test dropp» først.', 'warn', { key: 'form' }); return; }
+      const st = await outGetState();
+      if (!st) { notify('Ingenting spilles akkurat nå. Start sangen med «Test dropp» først.', 'warn', { key: 'form' }); return; }
       $('fDrop').value = (st.position / 1000).toFixed(1);
-      const cur = st.track_window && st.track_window.current_track;
-      if (cur && !$('fLink').value.trim()) { $('fLink').value = cur.uri; onLinkChange(); }
+      if (st.uri && !$('fLink').value.trim()) { $('fLink').value = st.uri; onLinkChange(); }
     } catch (e) { notify('Kunne ikke lese posisjonen: ' + e.message, 'error', { key: 'form' }); }
   }
 
@@ -1958,8 +2203,8 @@
   const finderTrack = () => tracks.find((t) => t.id === finder.queue[finder.idx]);
 
   function startFinder() {
-    if (!tokens || !player || !deviceId) {
-      notify('Logg inn med Spotify og vent til statusen øverst er grønn før du starter Dropp-finneren.', 'warn', { key: 'finder' });
+    if (!tokens || (isRemote() ? !output.deviceId : (!player || !deviceId))) {
+      notify('Logg inn med Spotify og vent til statusen øverst er grønn (eller velg avspillingsenhet) før du starter Dropp-finneren.', 'warn', { key: 'finder' });
       return;
     }
     const cat = adminCat;
@@ -2018,11 +2263,16 @@
 
   async function finderMark() {
     const t = finderTrack();
-    if (!t || !player) return;
-    let st = null;
-    try { st = await player.getCurrentState(); } catch { /* ignorer */ }
-    if (!st) { notify('Ingenting spilles akkurat nå – vent til sangen har startet.', 'warn', { key: 'finder' }); return; }
-    const ms = Math.max(0, Math.round((st.position - settings.finder.reaksjonSek * 1000) / 100) * 100);
+    if (!t) return;
+    // Les posisjonen umiddelbart (lokalt estimat) – en API-forespørsel ville gitt ekstra forsinkelse.
+    let pos = null;
+    if (isRemote()) {
+      if (liveState && (liveState.uri === t.spotifyUri || liveState.linkedUri === t.spotifyUri)) pos = currentPos();
+    } else if (player) {
+      try { const st = await player.getCurrentState(); if (st) pos = st.position; } catch { /* ignorer */ }
+    }
+    if (pos === null) { notify('Ingenting spilles akkurat nå – vent til sangen har startet.', 'warn', { key: 'finder' }); return; }
+    const ms = Math.max(0, Math.round((pos - settings.finder.reaksjonSek * 1000) / 100) * 100);
     t.dropMs = ms;
     saveTracks();
     finder.saved++;
@@ -2039,23 +2289,29 @@
     if (finder.idx > 0) { finder.idx--; finderLoad(); }
   }
   async function finderSeek(delta) {
-    if (!player) return;
     try {
-      const st = await player.getCurrentState();
-      if (!st) return;
-      await player.seek(Math.max(0, Math.min(st.duration - 500, st.position + delta)));
+      let pos, dur;
+      if (isRemote()) {
+        if (!liveState) return;
+        pos = currentPos(); dur = liveState.duration || Infinity;
+      } else {
+        if (!player) return;
+        const st = await player.getCurrentState();
+        if (!st) return;
+        pos = st.position; dur = st.duration;
+      }
+      await outSeek(Math.max(0, Math.min(dur - 500, pos + delta)));
     } catch { /* ignorer */ }
   }
   async function finderReplay() {
     const t = finderTrack();
-    if (!t || !player) return;
+    if (!t) return;
     if (!t.dropMs) { notify('Denne sangen har ingen lagret dropp ennå.', 'info', { key: 'finder' }); return; }
     try {
-      const st = await player.getCurrentState();
-      const cur = st && st.track_window && st.track_window.current_track;
-      if (cur && (cur.uri === t.spotifyUri || (cur.linked_from && cur.linked_from.uri === t.spotifyUri))) {
-        await player.seek(t.dropMs);
-        await player.resume();
+      const st = await outGetState();
+      if (st && (st.uri === t.spotifyUri || st.linkedUri === t.spotifyUri)) {
+        await outSeek(t.dropMs);
+        await outResume();
       } else {
         await playTrack(t, 'test');
       }
@@ -2130,6 +2386,7 @@
     $('statusPill').title = 'Klikk for å koble til Spotify-spilleren på nytt';
     $('statusPill').addEventListener('click', async () => {
       if (!tokens) { openSetup(); return; }
+      if (isRemote()) { await refreshDevices(false); if (!devicesCache.some((d) => d.id === output.deviceId)) openSetup(); return; }
       unlockAudio();
       try { await recoverDevice(); notify('Spotify-spilleren er tilkoblet.', 'success', { key: 'device' }); }
       catch (e) { notify(explainError(e), 'error', { key: 'device' }); }
@@ -2148,7 +2405,11 @@
       masterVolume = clampVol(vol.value);
       $('volumeVal').textContent = masterVolume + ' %';
       store.set(LS.volume, masterVolume);
-      if (player && !isFading) player.setVolume(effectiveVolume()).catch(() => {});
+      if (isFading) return;
+      if (isRemote()) {
+        clearTimeout(volDebounce);
+        volDebounce = setTimeout(() => outSetVolume(effectiveVolume()).catch(() => {}), 250);
+      } else if (player) player.setVolume(effectiveVolume()).catch(() => {});
     });
 
     ['sAuto', 'sVol-mal', 'sVol-timeout', 'sVol-pause'].forEach((id) => $(id).addEventListener('change', () => { onSettingsChange(); renderSettings(); }));
@@ -2162,7 +2423,24 @@
     $('fnSkip').addEventListener('click', finderNext);
     $('fnPrev').addEventListener('click', finderPrev);
     $('fnReplay').addEventListener('click', finderReplay);
-    $('fnToggle').addEventListener('click', () => { if (player) player.togglePlay().catch(() => {}); });
+    $('fnToggle').addEventListener('click', () => { outToggle().catch(() => {}); });
+
+    $('outSel').addEventListener('change', () => {
+      const v = $('outSel').value;
+      if (v === 'browser') setOutput('browser', null);
+      else if (v.startsWith('dev:')) {
+        const id = v.slice(4);
+        const dev = devicesCache.find((d) => d.id === id) || { id, name: output.deviceName };
+        setOutput('remote', dev);
+      }
+    });
+    $('outRefresh').addEventListener('click', async () => {
+      const btn = $('outRefresh');
+      btn.disabled = true;
+      const list = await refreshDevices(false);
+      btn.disabled = false;
+      notify(list.length ? `Fant ${list.length} Spotify-enhet${list.length === 1 ? '' : 'er'}.` : 'Fant ingen Spotify-enheter. Åpne Spotify-appen på enheten som skal spille, start en sang og sett på pause, og prøv igjen.', list.length ? 'info' : 'warn', { key: 'devices' });
+    });
     document.querySelectorAll('#finder [data-seek]').forEach((b) => b.addEventListener('click', () => finderSeek(Number(b.dataset.seek))));
 
     $('plBtn').addEventListener('click', importPlaylist);
@@ -2220,7 +2498,7 @@
           return;
         }
         const fmap = { d: finderMark, n: finderNext, b: finderPrev, r: finderReplay };
-        if (isSpace) { e.preventDefault(); if (!e.repeat && player) player.togglePlay().catch(() => {}); return; }
+        if (isSpace) { e.preventDefault(); if (!e.repeat) outToggle().catch(() => {}); return; }
         if (fmap[k]) { e.preventDefault(); if (!e.repeat) fmap[k](); }
         return; // ingen andre snarveier mens Dropp-finneren er åpen
       }
@@ -2278,9 +2556,22 @@
       } else scheduleRefresh();
     }
     renderAuth();
+    renderOutput();
     if (tokens) {
       $('setupPanel').open = false;
-      initPlayer();
+      if (isRemote()) {
+        await refreshDevices(true);
+        startRemotePoll();
+        if (!output.deviceId || !devicesCache.some((d) => d.id === output.deviceId)) {
+          openSetup();
+          notify(output.deviceId
+            ? `Fant ikke «${output.deviceName}». Åpne Spotify-appen på enheten, spill av noe og sett på pause, og trykk «↻ Oppdater» under Avspillingsenhet.`
+            : 'Velg hvilken Spotify-enhet som skal spille musikken under «Avspillingsenhet».', 'warn', { key: 'devices' });
+        }
+      } else {
+        initPlayer();
+        refreshDevices(true);
+      }
       loadProfile();
       validateTracks();
     } else {
