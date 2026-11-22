@@ -1003,7 +1003,7 @@
     if (e.status === 401) return 'Spotify-tilgangen har utløpt. Prøver å fornye … Logg inn på nytt hvis feilen gjentar seg.';
     if (e.status === 403 && (e.reason === 'PREMIUM_REQUIRED' || /premium/i.test(e.message))) return PREMIUM_MSG;
     if (e.status === 403) return 'Spotify avviste kommandoen (' + e.message + '). Sjekk at kontoen har Premium og er lagt til under «User Management» i Spotify Dashboard.';
-    if (e.status === 404) return 'Fant ikke nettleserspilleren hos Spotify. Prøver å koble til på nytt – trykk igjen om et øyeblikk.';
+    if (e.status === 404) return 'Spotify finner ikke nettleserspilleren, selv etter ny tilkobling. Last inn siden på nytt (F5). Hjelper ikke det: slå av annonseblokkering for siden, lukk andre faner med soundboardet, og i Firefox må «Spill av DRM-kontrollert innhold» være slått på.';
     if (e.status === 429) return 'Spotify ber oss vente litt (for mange forespørsler). Prøv igjen om noen sekunder.';
     if (e.status >= 500) return 'Spotify har tekniske problemer akkurat nå (' + e.status + '). Prøv igjen.';
     return 'Spotify-feil: ' + e.message;
@@ -1016,6 +1016,68 @@
     } catch (e) {
       if (e.status === 404 || e.status === 502) { await sleep(1000); await api('PUT', '/me/player', { device_ids: [deviceId], play: false }); }
       else throw e;
+    }
+  }
+
+  /* ---------- Gjenoppretting av nettleserspilleren ---------- */
+  let readyWaiters = [];
+  let recoverPromise = null;
+
+  function waitForReady(timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const waiter = (id) => { clearTimeout(timer); resolve(id); };
+      const timer = setTimeout(() => {
+        readyWaiters = readyWaiters.filter((w) => w !== waiter);
+        const e = new Error('Spilleren ble ikke klar i tide'); e.status = 404; reject(e);
+      }, timeoutMs);
+      readyWaiters.push(waiter);
+    });
+  }
+
+  /** Er nettleserspilleren registrert hos Spotify akkurat nå? (null = ukjent) */
+  async function deviceIsRegistered() {
+    if (!deviceId) return false;
+    try {
+      const d = await api('GET', '/me/player/devices');
+      return ((d && d.devices) || []).some((x) => x.id === deviceId);
+    } catch { return null; }
+  }
+
+  /** Sørger for at Spotify kjenner nettleserspilleren – kobler til på nytt om nødvendig. */
+  function recoverDevice() {
+    if (recoverPromise) return recoverPromise;
+    recoverPromise = (async () => {
+      if (!tokens) { const e = new Error('Ikke innlogget'); e.code = 'no_token'; throw e; }
+      if (deviceId && (await deviceIsRegistered()) === true) {
+        await transferPlayback();
+        return deviceId;
+      }
+      setStatus('wait', 'Kobler til på nytt …');
+      const ready = waitForReady(12000);
+      if (!player) {
+        initPlayer();
+      } else {
+        try { player.disconnect(); } catch { /* ignorer */ }
+        deviceId = null;
+        await sleep(400);
+        player.connect();
+      }
+      await ready;
+      await sleep(600); // gi Spotify et øyeblikk til å registrere enheten
+      await transferPlayback();
+      return deviceId;
+    })();
+    recoverPromise.finally(() => { recoverPromise = null; }).catch(() => {});
+    return recoverPromise;
+  }
+
+  /** Stille helsesjekk: oppdager en «død» spiller før noen trykker MÅL!. */
+  async function healthCheck() {
+    if (!tokens || !player || recoverPromise || busy || isFading || document.visibilityState !== 'visible') return;
+    const ok = await deviceIsRegistered();
+    if (ok === false) {
+      try { await recoverDevice(); clearNotice('device'); }
+      catch { notify('Mistet kontakten med Spotify-spilleren. Klikk på statusen øverst for å koble til på nytt, eller last inn siden.', 'warn', { key: 'device' }); }
     }
   }
 
@@ -1142,6 +1204,7 @@
       setStatus('on', 'Tilkoblet · ' + DEVICE_NAME);
       clearNotice('device'); clearNotice('sdk');
       renderUnlock();
+      readyWaiters.splice(0).forEach((w) => w(device_id));
       try { await transferPlayback(); } catch (e) { notify('Kunne ikke overføre avspillingen til nettleseren: ' + explainError(e), 'warn', { key: 'transfer' }); }
       ensureShuffleOff().catch(() => {});
       player.setVolume(effectiveVolume()).catch(() => {});
@@ -1230,28 +1293,34 @@
       openSetup();
       return false;
     }
-    if (!player || !deviceId) {
-      notify('Nettleserspilleren er ikke klar ennå. Vent til statusen øverst er grønn, og prøv igjen.', 'warn', { key: 'play' });
-      initPlayer();
+    if (!player && sdkLoading) {
+      notify('Nettleserspilleren starter fortsatt. Vent til statusen øverst er grønn, og prøv igjen.', 'warn', { key: 'play' });
       return false;
     }
     cancelFade();
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     const body = { uris: [track.spotifyUri], position_ms: Math.max(0, Math.round(track.dropMs || 0)) };
-    const path = '/me/player/play?device_id=' + encodeURIComponent(deviceId);
+    const playPath = () => '/me/player/play?device_id=' + encodeURIComponent(deviceId);
     try {
+      if (!player || !deviceId) {
+        notify('Kobler til nettleserspilleren …', 'info', { key: 'play', timeout: 3000 });
+        await recoverDevice();
+      }
       await Promise.all([
         ensureShuffleOff().catch(() => {}),
         player.setVolume(effectiveVolume()).catch(() => {})
       ]);
       try {
-        await api('PUT', path, body);
+        await api('PUT', playPath(), body);
       } catch (e) {
         if (e.status !== 404) throw e;
-        await transferPlayback();
-        await api('PUT', path, body);
+        // Spotify kjenner ikke enheten: koble til på nytt og prøv én gang til
+        notify('Spotify mistet nettleserspilleren – kobler til på nytt …', 'info', { key: 'play', timeout: 4000 });
+        await recoverDevice();
+        await api('PUT', playPath(), body);
       }
     } catch (e) {
+      if (e.status === 404) setStatus('off', 'Spilleren ikke funnet – klikk for å prøve igjen');
       notify(explainError(e), 'error', { key: 'play' });
       return false;
     }
@@ -2057,6 +2126,16 @@
     $('fadeBtn').addEventListener('click', () => { unlockAudio(); fadeOut(); });
     $('killBtn').addEventListener('click', () => { emergencyStop(); });
     $('unlockPill').addEventListener('click', () => { unlockAudio(); });
+    $('statusPill').style.cursor = 'pointer';
+    $('statusPill').title = 'Klikk for å koble til Spotify-spilleren på nytt';
+    $('statusPill').addEventListener('click', async () => {
+      if (!tokens) { openSetup(); return; }
+      unlockAudio();
+      try { await recoverDevice(); notify('Spotify-spilleren er tilkoblet.', 'success', { key: 'device' }); }
+      catch (e) { notify(explainError(e), 'error', { key: 'device' }); }
+    });
+    window.addEventListener('online', () => { setTimeout(healthCheck, 1500); });
+    setInterval(healthCheck, 120000);
     $('resetRoundBtn').addEventListener('click', () => {
       played[roundCat] = []; savePlayed(); renderRound();
       notify(`Runden for «${CATS[roundCat].navn}» er nullstilt – alle sangene er tilgjengelige igjen.`, 'info', { key: 'round' });
@@ -2167,6 +2246,7 @@
       if (document.visibilityState === 'visible') {
         requestWakeLock();
         if (tokens && Date.now() > tokens.expires_at - 5 * 60 * 1000) refreshToken().catch(() => {});
+        setTimeout(healthCheck, 1000);
       }
     });
 
