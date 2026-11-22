@@ -67,6 +67,30 @@
   @keyframes blink { 50% { opacity: .35; } }
   .pill.unlock { background: var(--amber); color: #111; border-color: var(--amber); cursor: pointer; }
 
+  /* ---------- Tilknyttet Spotify-konto ---------- */
+  .acct { position: relative; }
+  .acct-btn { cursor: pointer; padding: 4px 12px 4px 4px; min-height: 40px; }
+  .acct-btn[aria-expanded="true"] { border-color: var(--accent); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: #1db954 center/cover no-repeat; color: #04140a; font-weight: 900; font-size: .8rem;
+  }
+  .acct-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  .acct-badge { font-size: .68rem; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 5px; background: #0b2617; color: #86efac; border: 1px solid #166534; }
+  .acct-badge.bad { background: #2a0f12; color: #fecaca; border-color: var(--red); }
+  .acct-menu {
+    position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: min(320px, calc(100vw - 32px));
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.55); display: flex; flex-direction: column; gap: 10px;
+  }
+  .acct-menu .who { display: flex; gap: 12px; align-items: center; }
+  .acct-menu .who .avatar { width: 48px; height: 48px; font-size: 1.1rem; }
+  .acct-menu .nm { font-weight: 800; overflow-wrap: anywhere; }
+  .acct-menu .em { color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
+  .acct-menu .btn { width: 100%; }
+  .acct-menu .tip { font-size: .8rem; color: var(--muted); }
+  @media (max-width: 520px) { .acct-name { max-width: 90px; } }
+
   /* ---------- Notices ---------- */
   #notices { display: grid; gap: 8px; margin-bottom: 12px; }
   .notice {
@@ -340,6 +364,27 @@
       <span class="pill" id="statusPill" title="Tilkobling til Spotify"><span class="dot" id="statusDot"></span><span id="statusText">Ikke tilkoblet</span></span>
       <span class="pill" id="wakePill" title="Hindrer at skjermen slår seg av">🔆 <span id="wakeText">Skjermlås: …</span></span>
       <button class="pill unlock" id="unlockPill" hidden>🔊 Klikk for å aktivere lyd</button>
+      <div class="acct" id="acct" hidden>
+        <button class="pill acct-btn" id="acctBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="acctMenu" title="Tilknyttet Spotify-konto">
+          <span class="avatar" id="acctAvatar" aria-hidden="true"></span>
+          <span class="acct-name" id="acctName">Spotify</span>
+          <span class="acct-badge" id="acctBadge"></span>
+        </button>
+        <div class="acct-menu" id="acctMenu" hidden>
+          <div class="who">
+            <span class="avatar" id="acctAvatarBig" aria-hidden="true"></span>
+            <div style="min-width:0">
+              <div class="small muted">Tilknyttet Spotify-konto</div>
+              <div class="nm" id="acctMenuName"></div>
+              <div class="em" id="acctMenuEmail"></div>
+            </div>
+          </div>
+          <div class="okbox" id="acctMenuPlan" style="margin:0"></div>
+          <button class="btn" id="acctSwitch" type="button">🔄 Bytt bruker</button>
+          <button class="btn danger" id="acctLogout" type="button">Logg ut</button>
+          <div class="tip">Delt PC? Logg også ut av Spotify i nettleseren, ellers kan neste person bli logget rett inn med denne kontoen: <a href="https://accounts.spotify.com/logout" target="_blank" rel="noopener">logg ut av spotify.com</a>.</div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -1815,6 +1860,41 @@
     } else {
       box.hidden = true;
     }
+    renderAccountChip();
+  }
+
+  /** Viser hvilken Spotify-konto som er tilknyttet, øverst til høyre. */
+  function renderAccountChip() {
+    const wrap = $('acct');
+    if (!tokens || !profile) { wrap.hidden = true; $('acctMenu').hidden = true; return; }
+    wrap.hidden = false;
+    const name = profile.display_name || profile.id || 'Spotify-bruker';
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
+    const img = profile.images && profile.images.length ? profile.images[profile.images.length - 1].url || profile.images[0].url : null;
+    ['acctAvatar', 'acctAvatarBig'].forEach((id) => {
+      const el = $(id);
+      if (img) { el.style.backgroundImage = `url("${String(img).replace(/"/g, '')}")`; el.textContent = ''; }
+      else { el.style.backgroundImage = ''; el.textContent = initials; }
+    });
+    $('acctName').textContent = name;
+    const prem = profile.product === 'premium';
+    const badge = $('acctBadge');
+    badge.textContent = prem ? 'PREMIUM' : 'IKKE PREMIUM';
+    badge.className = 'acct-badge' + (prem ? '' : ' bad');
+    $('acctBtn').title = `Tilknyttet Spotify-konto: ${name}${profile.email ? ' (' + profile.email + ')' : ''}`;
+    $('acctMenuName').textContent = name;
+    $('acctMenuEmail').textContent = profile.email || (profile.id ? 'Brukernavn: ' + profile.id : '');
+    const plan = $('acctMenuPlan');
+    plan.textContent = prem ? 'Spotify Premium ✓ – musikken spilles fra denne kontoen.' : 'Ikke Premium – Spotify tillater ikke avspilling fra denne kontoen.';
+    plan.className = prem ? 'okbox' : 'warnbox';
+    plan.style.margin = '0';
+  }
+
+  function toggleAccountMenu(open) {
+    const menu = $('acctMenu');
+    const show = open ?? menu.hidden;
+    menu.hidden = !show;
+    $('acctBtn').setAttribute('aria-expanded', String(show));
   }
 
   function renderEnvWarning() {
@@ -2431,6 +2511,15 @@
     cid.value = (store.get(LS.clientId, '') || '').trim();
     if (DEFAULT_CLIENT_ID) cid.placeholder = 'Forhåndsinnstilt (' + DEFAULT_CLIENT_ID.slice(0, 6) + '…) – fyll inn bare for å overstyre';
     $('gateLoginBtn').addEventListener('click', () => login());
+    $('acctBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleAccountMenu(); });
+    $('acctMenu').addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', () => { if (!$('acctMenu').hidden) toggleAccountMenu(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('acctMenu').hidden) toggleAccountMenu(false); });
+    $('acctSwitch').addEventListener('click', () => { toggleAccountMenu(false); logout(true); login(true); });
+    $('acctLogout').addEventListener('click', () => {
+      toggleAccountMenu(false);
+      if (confirm('Logge ut av Spotify på denne enheten?')) logout(false);
+    });
     $('gateLogoutBtn').addEventListener('click', () => { logout(true); login(true); });
     cid.addEventListener('input', () => {
       const v = cid.value.trim();
