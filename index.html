@@ -440,6 +440,14 @@
   .gate-admin::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); }
   body:not(.simple) .gate-admin { display: none; }
 
+  /* Berøringsskjerm (mobil/nettbrett): skjul tastatursnarveier */
+  @media (hover: none) and (pointer: coarse) {
+    .gb-keys, .catbtn kbd, #fadeBtn kbd, #killBtn kbd, footer.app-only { display: none !important; }
+  }
+
+  /* Offentlig visning: bare spilleren */
+  body.public .admin-ui { display: none !important; }
+
   /* Lydkilde */
   body.src-plex .spotify-only { display: none !important; }
   body:not(.src-plex) .plex-only { display: none !important; }
@@ -536,9 +544,13 @@
   </section>
 
   <!-- ===== Spotify Oppsett ===== -->
-  <details class="panel" id="setupPanel">
+  <details class="panel admin-ui" id="setupPanel">
     <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></span> <span id="setupTitle">Spotify-oppsett</span> <span class="sum-extra" id="setupSummary"></span></summary>
     <div class="panel-body">
+      <div class="okbox" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <span>Du er logget inn som <b>administrator</b>. Endringer her gjelder bare denne nettleseren til du publiserer listen.</span>
+        <button class="btn sm" id="adminLogoutBtn" type="button">Logg ut admin</button>
+      </div>
       <div class="admin-only">
         <label class="lbl">Lydkilde</label>
         <div class="seg" id="sourceSeg" role="group" aria-label="Lydkilde" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0">
@@ -666,7 +678,7 @@
   </section>
 
   <!-- ===== Administrer sanger ===== -->
-  <details class="panel app-only" id="adminPanel">
+  <details class="panel app-only admin-ui" id="adminPanel">
     <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg></span> Sanger, spillelister og innstillinger <span class="sum-extra" id="adminSummary"></span></summary>
     <div class="panel-body">
 
@@ -721,6 +733,16 @@
         </div>
         <div class="hint" id="prepHint"></div>
         <div class="hint">«Gjør klar til kamp» lagrer sangene på denne enheten, så musikken virker selv om nettet i hallen faller ut. «Foreslå dropp» analyserer lyden og setter starttid for sangene i valgt kategori som står på 0:00.</div>
+
+        <div class="section">
+          <h3>Publiser fast liste for alle</h3>
+          <label class="chk"><input type="checkbox" id="pubShare"> Del Plex-tilgangen med alle besøkende (kreves for at musikken skal spille på andres mobil/PC)</label>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="publishBtn" type="button">Last ned kampdj-liste.json</button>
+            <button class="btn" id="loadFixedBtn" type="button">Hent publisert liste inn for redigering</button>
+          </div>
+          <div class="hint" id="publishHint">Listen som publiseres er alle Plex-sangene i Mål, Timeout og Pause med dropp, samt auto-stopp og volum. Last opp fila til GitHub-repoet (Add file → Upload files) – etter 1–2 minutter får alle på kampdj.no den nye listen.</div>
+        </div>
       </div>
 
       <div class="section">
@@ -834,6 +856,24 @@
     </div>
   </div>
 
+  <!-- ===== Admin-innlogging ===== -->
+  <div class="overlay" id="adminLogin" hidden role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle">
+    <form class="finder" id="adminLoginForm" style="width:min(420px,100%)" autocomplete="on">
+      <div class="fn-head">
+        <h2 id="adminLoginTitle" class="legal-h">Admin</h2>
+        <button class="btn sm ghost" id="adminLoginClose" type="button">Avbryt</button>
+      </div>
+      <div>
+        <label class="lbl" for="adminUser" style="margin-top:0">Brukernavn</label>
+        <input id="adminUser" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+        <label class="lbl" for="adminPass">Passord</label>
+        <input id="adminPass" type="password" autocomplete="current-password">
+        <div class="hint bad" id="adminLoginErr" role="alert"></div>
+      </div>
+      <button class="btn primary" id="adminLoginBtn" type="submit" style="width:100%">Logg inn</button>
+    </form>
+  </div>
+
   <!-- ===== Brukervilkår og personvern (må godkjennes) ===== -->
   <div class="overlay" id="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consentTitle">
     <div class="finder legal">
@@ -914,7 +954,7 @@
     <span><kbd>Esc</kbd> Nødstopp</span>
     <span>Snarveier er av mens du skriver i tekstfelt (Esc virker alltid).</span>
   </footer>
-  <p class="legal-links"><a href="#" id="openTerms">Brukervilkår</a><span aria-hidden="true">·</span><a href="#" id="openPrivacy">Personvernerklæring</a></p>
+  <p class="legal-links"><a href="#" id="openTerms">Brukervilkår</a><span aria-hidden="true">·</span><a href="#" id="openPrivacy">Personvernerklæring</a><span aria-hidden="true">·</span><a href="#" id="adminLink">Admin</a></p>
 </div>
 
 <script>
@@ -943,6 +983,13 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
+  // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
+  const ADMIN_USER = 'pskjel';
+  const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
+  const ADMIN_HASH = 'ecc8ab714c7774566d9c999d0f188f529dde611003c99d41bc24524cd46b06af';
+  const ADMIN_ITER = 210000;
+  // Fast sangliste som alle besøkende får (publiseres av admin)
+  const FIXED_LIST_URL = './kampdj-liste.json';
   const FADE_MS = 1500;
   const FADE_STEPS = 15;
   const LS = {
@@ -1064,9 +1111,14 @@
   /* =====================================================================
    * Tilstand
    * ===================================================================== */
-  let source = (() => { const v = store.get(LS.source, null); return v === 'plex' || v === 'spotify' ? v : DEFAULT_SOURCE; })();
+  const isAdmin = (() => { try { return sessionStorage.getItem('kampdj.admin') === '1'; } catch { return false; } })();
+  let fixedList = null;          // publisert liste (kampdj-liste.json)
+  let publicPlexToken = '';      // delt Plex-tilgang fra publisert liste
+  let source = isAdmin
+    ? (() => { const v = store.get(LS.source, null); return v === 'plex' || v === 'spotify' ? v : DEFAULT_SOURCE; })()
+    : 'plex';
   const usePlex = () => source === 'plex';
-  let tracks = loadTracks();
+  let tracks = isAdmin ? loadTracks() : [];
   let played = loadPlayed();
   let settings = loadSettings();
   let masterVolume = clampVol(store.get(LS.volume, 100));
@@ -1225,7 +1277,7 @@
     if (twin) { t.dropMs = twin.dropMs; t.dropSource = isManualDrop(twin) ? 'manual' : 'auto'; return true; }
     return false;
   }
-  function saveTracks() { store.set(LS.tracks, tracks); rememberDrops(); }
+  function saveTracks() { if (!isAdmin) return; store.set(LS.tracks, tracks); rememberDrops(); }
   function savePlayed() { store.set(LS.played, played); }
   function saveSettings() { store.set(LS.settings, settings); }
   const tracksIn = (cat) => tracks.filter((t) => t.kategori === cat && (t.source || 'spotify') === source);
@@ -1851,7 +1903,7 @@
   let plexServers = [];
   let plexPlaylists = [];
   const savePlex = () => store.set(LS.plex, plex);
-  const plexToken = () => plex.token || PLEX_SHARED_TOKEN || '';
+  const plexToken = () => plex.token || publicPlexToken || PLEX_SHARED_TOKEN || '';
   const plexReady = () => !!(plex.server && plex.server.base && plex.server.token);
   const trackUri = (t) => (t && t.source === 'plex' ? 'plex:' + t.plexKey : t && t.spotifyUri);
 
@@ -2815,7 +2867,12 @@
 
   /** Forenklet visning for vanlige brukere når Client ID er lagt fast inn i appen. */
   function applyViewMode() {
-    const admin = window.location.hash === '#admin' || !DEFAULT_CLIENT_ID;
+    document.body.classList.toggle('public', !isAdmin);
+    if (!isAdmin) {
+      if (window.location.hash === '#admin') openAdminLogin();
+      return;
+    }
+    const admin = true;
     document.body.classList.toggle('simple', !admin);
     $('setupTitle').textContent = usePlex() ? (admin ? 'Oppsett · Plex' : 'Musikkbibliotek') : (admin ? 'Spotify-oppsett' : 'Avspillingsenhet');
     if (window.location.hash === '#admin') openSetup();
@@ -3561,6 +3618,97 @@
   function pressAnim(id) { const b = $(id); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120); }
 
   /* =====================================================================
+   * Admin og fast liste
+   * ===================================================================== */
+  const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+  const unhex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
+  async function checkAdmin(user, pass) {
+    if (String(user || '').trim().toLowerCase() !== ADMIN_USER) return false;
+    if (!window.crypto || !crypto.subtle) return false;
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: unhex(ADMIN_SALT), iterations: ADMIN_ITER }, key, 256);
+    return hex(bits) === ADMIN_HASH;
+  }
+  function openAdminLogin() {
+    $('adminLogin').hidden = false;
+    document.body.classList.add('finder-open');
+    $('adminLoginErr').textContent = '';
+    setTimeout(() => $('adminUser').focus(), 50);
+  }
+  function closeAdminLogin() {
+    $('adminLogin').hidden = true;
+    if (!finder.active) document.body.classList.remove('finder-open');
+  }
+  function adminLogout() {
+    try { sessionStorage.removeItem('kampdj.admin'); } catch { /* ignorer */ }
+    window.location.replace(REDIRECT_URI);
+  }
+
+  /** Henter den publiserte, faste listen (for besøkende). */
+  async function loadFixedList() {
+    try {
+      const res = await fetch(FIXED_LIST_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (!data || !Array.isArray(data.tracks)) return null;
+      return data;
+    } catch { return null; }
+  }
+  function applyFixedList(data) {
+    fixedList = data;
+    tracks = dedupeIds(data.tracks.map((t) => normalizeTrack(t)).filter(Boolean));
+    if (data.innstillinger && typeof data.innstillinger === 'object') {
+      settings = sanitizeSettings({ ...settings, ...data.innstillinger, vol: { ...settings.vol, ...(data.innstillinger.vol || {}) } });
+    }
+    publicPlexToken = typeof data.plexToken === 'string' ? data.plexToken : '';
+    played = loadPlayed();
+    renderAll();
+  }
+
+  async function publishList() {
+    const list = tracks.filter((t) => t.source === 'plex');
+    if (!list.length) { notify('Ingen Plex-sanger å publisere.', 'warn', { key: 'publish' }); return; }
+    const payload = {
+      app: 'kampdj', versjon: 3, publisert: new Date().toISOString(), kilde: 'plex',
+      innstillinger: { autoStopSek: settings.autoStopSek, autoStopFade: settings.autoStopFade, vol: settings.vol },
+      tracks: list.map((t) => ({ id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, fileName: t.fileName, dropMs: t.dropMs, dropSource: t.dropSource }))
+    };
+    if ($('pubShare').checked) {
+      if (!plex.token) { notify('Koble til Plex på denne enheten først (Oppsett → Koble til Plex).', 'error', { key: 'publish' }); return; }
+      let owned = false;
+      try {
+        const servers = plexServers.length ? plexServers : await plexLoadServers();
+        const srv = servers.find((x) => plex.server && x.clientIdentifier === plex.server.id);
+        owned = !!(srv && srv.owned);
+      } catch { /* ukjent */ }
+      if (owned) {
+        notify('Du er koblet til Plex med eierkontoen din. Den kan ikke deles offentlig – da får alle full tilgang til Plex-kontoen din. Lag en egen Plex-konto for klubben, del bare musikkbiblioteket med den, koble til med den og publiser på nytt.', 'error', { key: 'publish' });
+        return;
+      }
+      if (!confirm('Plex-tilgangen for denne (klubb)kontoen blir synlig for alle som åpner kampdj.no. Fortsette?')) return;
+      payload.plexToken = plex.token;
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'kampdj-liste.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    notify(`kampdj-liste.json er lastet ned (${list.length} sanger${payload.plexToken ? ', med delt Plex-tilgang' : ', uten delt Plex-tilgang'}). Last den opp til GitHub-repoet for å publisere.`, 'success', { key: 'publish', timeout: 10000 });
+  }
+  async function loadFixedForEditing() {
+    const data = await loadFixedList();
+    if (!data) { notify('Fant ingen publisert liste på kampdj.no ennå.', 'warn', { key: 'publish' }); return; }
+    if (!confirm(`Erstatte Plex-sangene i redigeringslisten med den publiserte listen (${data.tracks.length} sanger)?`)) return;
+    const fixedTracks = dedupeIds(data.tracks.map((t) => normalizeTrack(t)).filter(Boolean));
+    tracks = tracks.filter((t) => t.source !== 'plex').concat(fixedTracks);
+    if (data.innstillinger) { settings = sanitizeSettings({ ...settings, ...data.innstillinger }); saveSettings(); renderSettings(); }
+    played = emptyPlayed(); savePlayed();
+    saveTracks(); resetForm(); renderAll();
+    notify('Den publiserte listen er hentet inn for redigering.', 'success', { key: 'publish' });
+  }
+
+  /* =====================================================================
    * Brukervilkår og personvern
    * ===================================================================== */
   function hasConsent() { const c = store.get(LS.consent, null); return !!(c && c.version === TERMS_VERSION); }
@@ -3653,6 +3801,24 @@
     });
     sl.addEventListener('pointerup', () => { setTimeout(() => { finder.dragging = false; }, 300); });
     bindConsent();
+    $('adminLink').textContent = isAdmin ? 'Logg ut admin' : 'Admin';
+    $('adminLink').addEventListener('click', (e) => { e.preventDefault(); if (isAdmin) adminLogout(); else openAdminLogin(); });
+    $('adminLogoutBtn').addEventListener('click', adminLogout);
+    $('adminLoginClose').addEventListener('click', closeAdminLogin);
+    $('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = $('adminLoginBtn');
+      btn.disabled = true; $('adminLoginErr').textContent = '';
+      let ok = false;
+      try { ok = await checkAdmin($('adminUser').value, $('adminPass').value); } catch { ok = false; }
+      btn.disabled = false;
+      if (!ok) { $('adminLoginErr').textContent = 'Feil brukernavn eller passord.'; $('adminPass').value = ''; return; }
+      try { sessionStorage.setItem('kampdj.admin', '1'); } catch { /* ignorer */ }
+      window.location.replace(REDIRECT_URI + '#admin');
+      window.location.reload();
+    });
+    $('publishBtn').addEventListener('click', publishList);
+    $('loadFixedBtn').addEventListener('click', loadFixedForEditing);
     $('acctBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleAccountMenu(); });
     $('acctMenu').addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('click', () => { if (!$('acctMenu').hidden) toggleAccountMenu(false); });
@@ -3787,7 +3953,7 @@
     // Tastatursnarveier
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (!$('consent').hidden) return; // ingen snarveier før vilkårene er godtatt
+      if (!$('consent').hidden || !$('adminLogin').hidden) return; // ingen snarveier i dialoger
       const isSpace = e.code === 'Space' || e.key === ' ';
       const k = (e.key || '').toLowerCase();
       if (finder.active) {
@@ -3856,8 +4022,23 @@
     renderNowPlaying();
     setStatus('off', 'Ikke tilkoblet');
     requestWakeLock();
+    if (!isAdmin) {
+      // Offentlig visning: fast liste fra kampdj-liste.json, spilles fra Plex-serveren
+      setLocked(false);
+      const data = await loadFixedList();
+      if (data) applyFixedList(data);
+      else { tracks = []; renderAll(); notify('Ingen sanger er publisert ennå.', 'info', { key: 'fixed', timeout: 0 }); }
+      if (plexToken()) {
+        const ok = await plexConnect(true);
+        if (!ok) notify('Musikkserveren er ikke tilgjengelig akkurat nå. Prøv igjen om litt.', 'error', { key: 'plex' });
+      } else if (data) {
+        setStatus('off', 'Musikk ikke tilgjengelig');
+        notify('Musikken er ikke delt for alle ennå. Administrator må publisere listen med delt Plex-tilgang.', 'warn', { key: 'plex', timeout: 0 });
+      }
+      return;
+    }
     if (usePlex()) {
-      // Plex-modus: åpen for alle, ingen innlogging for brukerne
+      // Plex-modus for administrator
       setLocked(false);
       renderPlex();
       await plexHandleReturn();
