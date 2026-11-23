@@ -983,7 +983,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
-  const APP_VERSION = '2026-11-23.4';
+  const APP_VERSION = '2026-11-23.5';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -2339,6 +2339,7 @@
   /** Stopper sikkert: demper med en gang, pauser, og sjekker igjen etterpå (med mindre en ny sang er startet). */
   function localHardStop() {
     const seq = ++local.seq;
+    dbg('stopp (pause + demp)');
     if (local.wa && local.gain && local.ctx) {
       const g = local.gain.gain;
       try { g.cancelScheduledValues(local.ctx.currentTime); g.setValueAtTime(0, local.ctx.currentTime); } catch { /* ignorer */ }
@@ -2392,6 +2393,7 @@
         (e) => { clearTimeout(timer); el.removeEventListener('error', onErr); reject(e); });
     });
     let err = null;
+    dbg('spill ' + (track.tittel || '').slice(0, 24) + ' fra ' + startSec.toFixed(1) + ' s');
     local.trying = true;
     if (!local.preferPlain) {
       try { await tryPlay(localEl()); } catch (e) { err = e; }
@@ -2406,6 +2408,7 @@
       } catch (e2) { err = e2; }
     }
     local.trying = false;
+    dbg(err ? 'feil: ' + (err.name || '') + ' ' + (err.message || '') : 'spiller (' + (local.el === local.elWA ? 'Web Audio' : 'enkel') + ')');
     if (err) {
       const msg = err.name === 'NotAllowedError'
         ? 'Nettleseren blokkerte lyden. Trykk én gang på skjermen og prøv igjen.'
@@ -2796,6 +2799,7 @@
   let autoFadeUiTimer = null;
   function finishLocalAutoStop() {
     autoStopTimer = null;
+    dbg('auto-stopp utløst');
     localHardStop();
     isFading = false;
     $('fadeBtn').classList.remove('fading');
@@ -2807,7 +2811,9 @@
     autoStopAt = Date.now() + ms;
     const fadeDur = settings.autoStopFade ? Math.min(FADE_MS, ms) : 0;
     // Plex: hele nedtoningen planlegges på lydklokken med en gang
-    if (usePlex() && localScheduleFade((ms - fadeDur) / 1000, fadeDur / 1000)) {
+    const planned = usePlex() && localScheduleFade((ms - fadeDur) / 1000, fadeDur / 1000);
+    dbg('auto-stopp planlagt ' + (ms / 1000) + ' s (' + (planned ? 'lydklokke' : 'tidtaker') + ')');
+    if (planned) {
       if (fadeDur) autoFadeUiTimer = setTimeout(() => { isFading = true; $('fadeBtn').classList.add('fading'); }, ms - fadeDur);
       autoStopTimer = setTimeout(finishLocalAutoStop, ms + 30);
       return;
@@ -3710,6 +3716,48 @@
   function pressAnim(id) { const b = $(id); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120); }
 
   /* =====================================================================
+   * Versjonssjekk og feilsøking
+   * ===================================================================== */
+  async function checkForUpdate() {
+    try {
+      const res = await fetch(REDIRECT_URI + '?vcheck=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return;
+      const m = (await res.text()).match(/const APP_VERSION = '([^']+)'/);
+      if (m && m[1] !== APP_VERSION) {
+        const el = notify(`En ny versjon av KampDJ er tilgjengelig (v${m[1]}). Trykk her for å oppdatere.`, 'info', { key: 'update', timeout: 0 });
+        el.style.cursor = 'pointer';
+        el.querySelector('.msg').addEventListener('click', () => window.location.replace(REDIRECT_URI + '?v=' + encodeURIComponent(m[1])));
+      }
+    } catch { /* ignorer */ }
+  }
+  const dbgLog = [];
+  function dbg(msg) { dbgLog.push(new Date().toLocaleTimeString('nb-NO') + ' ' + msg); if (dbgLog.length > 12) dbgLog.shift(); }
+  let dbgTimer = null;
+  function toggleDebug() {
+    let box = $('dbgBox');
+    if (box) { box.remove(); clearInterval(dbgTimer); return; }
+    box = document.createElement('pre');
+    box.id = 'dbgBox';
+    box.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:60;max-height:45vh;overflow:auto;margin:0;padding:10px;border-radius:10px;background:rgba(0,0,0,.88);color:#cfe;font:11px/1.4 ui-monospace,monospace;white-space:pre-wrap;border:1px solid #444';
+    box.addEventListener('click', () => { box.remove(); clearInterval(dbgTimer); });
+    document.body.appendChild(box);
+    const st = (el, name) => el ? `${name}: ${el.paused ? 'pauset' : 'SPILLER'} t=${el.currentTime.toFixed(1)} vol=${el.volume.toFixed(2)} err=${el.error ? el.error.code : '-'} src=${(el.getAttribute('src') || '-').slice(0, 30)}` : `${name}: -`;
+    const draw = () => {
+      box.textContent = [
+        `KampDJ v${APP_VERSION} · ${isAdmin ? 'admin' : 'besøkende'} · kilde ${source}`,
+        `motor: ${local.el === local.elWA ? 'Web Audio' : local.el === local.elPlain ? 'enkel (reserve)' : '-'} · preferPlain=${local.preferPlain} · ctx=${local.ctx ? local.ctx.state : '-'} · gain=${local.gain ? local.gain.gain.value.toFixed(2) : '-'}`,
+        st(local.elWA, 'WA   '), st(local.elPlain, 'enkel'),
+        `autostopp: ${autoStopAt ? Math.max(0, Math.round((autoStopAt - Date.now()) / 100) / 10) + ' s' : '-'} · fading=${isFading} · timer=${autoStopTimer ? 'ja' : 'nei'}`,
+        `plex: ${plexReady() ? plex.server.name + (plex.server.relay ? ' (relé)' : plex.server.local ? ' (lokal)' : ' (fjern)') : 'ikke tilkoblet'}`,
+        `synlig: ${document.visibilityState} · ${navigator.userAgent.slice(0, 90)}`,
+        '— logg —', ...dbgLog
+      ].join('\n');
+    };
+    draw();
+    dbgTimer = setInterval(draw, 400);
+  }
+
+  /* =====================================================================
    * Admin og fast liste
    * ===================================================================== */
   const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
@@ -3895,6 +3943,9 @@
     bindConsent();
     $('adminLink').textContent = isAdmin ? 'Logg ut admin' : 'Admin';
     $('appVersion').textContent = 'v' + APP_VERSION;
+    let vTaps = 0, vTimer = null;
+    $('appVersion').addEventListener('click', () => { vTaps++; clearTimeout(vTimer); vTimer = setTimeout(() => { vTaps = 0; }, 1500); if (vTaps >= 5) { vTaps = 0; toggleDebug(); } });
+    if (new URLSearchParams(location.search).has('debug')) setTimeout(toggleDebug, 500);
     $('adminLink').addEventListener('click', (e) => { e.preventDefault(); if (isAdmin) adminLogout(); else openAdminLogin(); });
     $('adminLogoutBtn').addEventListener('click', adminLogout);
     $('adminLoginClose').addEventListener('click', closeAdminLogin);
@@ -4084,6 +4135,7 @@
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
+        checkForUpdate();
         requestWakeLock();
         if (tokens && Date.now() > tokens.expires_at - 5 * 60 * 1000) refreshToken().catch(() => {});
         setTimeout(healthCheck, 1000);
@@ -4102,6 +4154,7 @@
    * ===================================================================== */
   async function start() {
     rememberDrops();
+    setTimeout(checkForUpdate, 1500);
     document.body.classList.toggle('src-plex', usePlex());
     document.querySelectorAll('#sourceSeg [data-source]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.source === source)));
     bindEvents();
