@@ -957,6 +957,7 @@
     plex: 'soundboard.plex',
     plexPin: 'soundboard.plexPin',
     consent: 'soundboard.consent',
+    dropMemory: 'soundboard.dropMemory',
     verifier: 'soundboard.pkceVerifier',
     state: 'soundboard.pkceState'
   };
@@ -1122,6 +1123,7 @@
         partKey: o.partKey.slice(0, 300),
         durationMs: Number(o.durationMs) || 0,
         thumb: typeof o.thumb === 'string' ? o.thumb.slice(0, 300) : '',
+        fileName: typeof o.fileName === 'string' ? o.fileName.slice(0, 200) : '',
         dropMs: Number.isFinite(d) && d >= 0 ? Math.round(d) : 0
       };
     }
@@ -1174,7 +1176,39 @@
     if (typeof f.bareUtenDropp === 'boolean') s.finder.bareUtenDropp = f.bareUtenDropp;
     return s;
   }
-  function saveTracks() { store.set(LS.tracks, tracks); }
+  /* ---------- Dropp-minne: husker starttid per sang, også etter sletting/ny import ---------- */
+  let dropMemory = (() => { const m = store.get(LS.dropMemory, null); return m && typeof m === 'object' ? m : {}; })();
+  const normTxt = (x) => String(x || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  function dropKeys(t) {
+    const keys = [];
+    if (t.source === 'plex') {
+      if (t.plexKey) keys.push('k:' + t.plexKey);
+      if (t.fileName) keys.push('f:' + normTxt(t.fileName));
+      if (t.tittel && t.durationMs) keys.push('m:' + normTxt(t.tittel) + '|' + normTxt(t.artist) + '|' + Math.round(t.durationMs / 1000));
+    } else if (t.spotifyUri) keys.push('s:' + t.spotifyUri);
+    return keys;
+  }
+  function rememberDrops() {
+    let changed = false;
+    tracks.forEach((t) => {
+      if (!(t.dropMs > 0)) return;
+      dropKeys(t).forEach((k) => { if (dropMemory[k] !== t.dropMs) { dropMemory[k] = t.dropMs; changed = true; } });
+    });
+    if (changed) store.set(LS.dropMemory, dropMemory);
+  }
+  /** Setter lagret dropp på en sang hvis den er kjent fra før. Returnerer true hvis noe ble gjenopprettet. */
+  function restoreDrop(t) {
+    if (t.dropMs > 0) return false;
+    for (const k of dropKeys(t)) {
+      const v = dropMemory[k];
+      if (Number.isFinite(v) && v > 0) { t.dropMs = v; return true; }
+    }
+    // Samme sang finnes kanskje allerede i en annen kategori med dropp
+    const twin = tracks.find((x) => x !== t && x.dropMs > 0 && dropKeys(x).some((k) => dropKeys(t).includes(k)));
+    if (twin) { t.dropMs = twin.dropMs; return true; }
+    return false;
+  }
+  function saveTracks() { store.set(LS.tracks, tracks); rememberDrops(); }
   function savePlayed() { store.set(LS.played, played); }
   function saveSettings() { store.set(LS.settings, settings); }
   const tracksIn = (cat) => tracks.filter((t) => t.kategori === cat && (t.source || 'spotify') === source);
@@ -2042,6 +2076,7 @@
       partKey: String(part.key),
       durationMs: Number(m.duration) || 0,
       thumb: m.parentThumb || m.thumb || m.grandparentThumb || '',
+      fileName: part.file ? String(part.file).split(/[\\/]/).pop().slice(0, 200) : '',
       dropMs: 0
     };
   }
@@ -2071,17 +2106,19 @@
     try {
       const list = await plexPlaylistTracks(entry);
       const existing = new Set(tracksIn(cat).map((t) => t.plexKey));
-      let added = 0, dupes = 0;
+      let added = 0, dupes = 0, restored = 0;
       list.forEach((t) => {
         if (existing.has(t.plexKey)) { dupes++; return; }
         existing.add(t.plexKey);
-        tracks.push({ id: newId(), kategori: cat, ...t });
+        const nt = { id: newId(), kategori: cat, ...t };
+        if (restoreDrop(nt)) restored++;
+        tracks.push(nt);
         added++;
       });
       saveTracks();
       renderAll();
       updatePrepHint();
-      notify(`La til ${added} sanger fra «${entry.title}» i «${CATS[cat].navn}»${dupes ? ` (${dupes} fantes fra før)` : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
+      notify(`La til ${added} sanger fra «${entry.title}» i «${CATS[cat].navn}»${dupes ? ` (${dupes} fantes fra før)` : ''}${restored ? ` – ${restored} fikk tilbake lagret dropp` : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
     } catch (e) {
       notify('Kunne ikke hente spillelisten: ' + e.message, 'error', { key: 'playlist' });
     } finally {
@@ -3197,11 +3234,13 @@
     try {
       const { name, tracks: list, skipped } = await fetchPlaylist(pid);
       const existing = new Set(tracksIn(cat).map((t) => t.spotifyUri));
-      let added = 0, dupes = 0;
+      let added = 0, dupes = 0, restored = 0;
       list.forEach((t) => {
         if (existing.has(t.spotifyUri)) { dupes++; return; }
         existing.add(t.spotifyUri);
-        tracks.push({ id: newId(), kategori: cat, ...t });
+        const nt = { id: newId(), kategori: cat, ...t };
+        if (restoreDrop(nt)) restored++;
+        tracks.push(nt);
         added++;
       });
       saveTracks();
@@ -3209,6 +3248,7 @@
       const parts = [];
       if (dupes) parts.push(`${dupes} fantes fra før`);
       if (skipped) parts.push(`${skipped} lokale filer/podkaster hoppet over`);
+      if (restored) parts.push(`${restored} fikk tilbake lagret dropp`);
       notify(`La til ${added} sanger fra «${name || 'spillelisten'}» i «${CATS[cat].navn}»${parts.length ? ' (' + parts.join(', ') + ')' : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
       $('plLink').value = '';
       if (added) validateTracks();
@@ -3230,7 +3270,7 @@
       eksportert: new Date().toISOString(),
       innstillinger: settings,
       tracks: tracks.map((t) => t.source === 'plex'
-        ? { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, dropMs: t.dropMs }
+        ? { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, fileName: t.fileName, dropMs: t.dropMs }
         : { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, spotifyUri: t.spotifyUri, dropMs: t.dropMs })
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -3778,6 +3818,7 @@
    * Oppstart
    * ===================================================================== */
   async function start() {
+    rememberDrops();
     document.body.classList.toggle('src-plex', usePlex());
     document.querySelectorAll('#sourceSeg [data-source]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.source === source)));
     bindEvents();
