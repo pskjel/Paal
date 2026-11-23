@@ -735,11 +735,11 @@
             <input id="sFinderReact" type="text" inputmode="decimal" placeholder="0.2">
           </div>
         </div>
-        <label class="chk"><input type="checkbox" id="sFinderOnly"> Bare sanger uten dropp (står på 0:00)</label>
+        <label class="chk" hidden><input type="checkbox" id="sFinderOnly" checked> Bare sanger uten dropp</label>
         <div class="row" style="margin-top:12px">
           <button class="btn primary" id="finderBtn" type="button">Finn dropp</button>
         </div>
-        <div class="hint">Spiller sangene i kategorien én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger som allerede har dropp starter 5 sek før det.</div>
+        <div class="hint">Går kun gjennom sanger i kategorien som ikke har lagret dropp, én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger med lagret dropp hoppes over.</div>
       </div>
 
       <form id="trackForm" autocomplete="off" novalidate class="section">
@@ -3343,11 +3343,11 @@
       return;
     }
     const cat = adminCat;
-    const only = settings.finder.bareUtenDropp;
-    const list = tracksIn(cat).filter((t) => !only || !t.dropMs);
+    // Dropp-finneren går kun gjennom sanger som ikke har lagret dropp
+    const list = tracksIn(cat).filter((t) => !(t.dropMs > 0));
     if (!list.length) {
-      notify(only
-        ? `Alle sangene i «${CATS[cat].navn}» har allerede dropp. Fjern haken «Bare sanger uten dropp» for å gå gjennom alle.`
+      notify(tracksIn(cat).length
+        ? `Alle sangene i «${CATS[cat].navn}» har allerede lagret dropp. Vil du endre en, trykk «Rediger» på sangen i listen og bruk «Test dropp».`
         : `Ingen sanger i «${CATS[cat].navn}».`, 'info', { key: 'finder' });
       return;
     }
