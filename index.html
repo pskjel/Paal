@@ -699,9 +699,9 @@
       </div>
 
       <div class="plex-only">
-        <h3>Hent spilleliste fra Plex</h3>
+        <h3>Hent sanger fra Plex</h3>
         <div class="row">
-          <select id="plexPlSel" class="grow" aria-label="Plex-spilleliste"></select>
+          <select id="plexPlSel" class="grow" aria-label="Plex-spilleliste, bibliotek eller album"></select>
           <button class="btn primary" id="plexPlBtn" type="button">Hent sanger</button>
           <button class="btn" id="plexPlRefresh" type="button">Oppdater</button>
         </div>
@@ -1942,33 +1942,57 @@
     if (!res.ok) { const e = new Error('Plex-serveren svarte ' + res.status); e.status = res.status; throw e; }
     return res.json();
   }
+  /** Henter alt som kan importeres: spillelister, hele musikkbiblioteker og album. */
   async function loadPlexPlaylists(quiet) {
+    const out = [];
+    let failed = null;
     try {
       const data = await plexServer('/playlists?playlistType=audio');
-      plexPlaylists = ((data && data.MediaContainer && data.MediaContainer.Metadata) || [])
-        .map((p) => ({ key: String(p.ratingKey), title: p.title || 'Uten navn', count: p.leafCount || 0 }));
-    } catch (e) {
-      if (!quiet) notify('Kunne ikke hente spillelister fra Plex: ' + e.message, 'error', { key: 'plex' });
+      ((data && data.MediaContainer && data.MediaContainer.Metadata) || []).forEach((p) => {
+        out.push({ kind: 'playlist', key: String(p.ratingKey), title: p.title || 'Uten navn', count: p.leafCount || 0 });
+      });
+    } catch (e) { failed = e; }
+    try {
+      const sec = await plexServer('/library/sections');
+      const music = ((sec && sec.MediaContainer && sec.MediaContainer.Directory) || []).filter((d) => d.type === 'artist');
+      for (const d of music) {
+        out.push({ kind: 'library', key: String(d.key), title: d.title || 'Musikk', count: null });
+        try {
+          const al = await plexServer(`/library/sections/${encodeURIComponent(d.key)}/all?type=9`);
+          ((al && al.MediaContainer && al.MediaContainer.Metadata) || []).slice(0, 1000).forEach((m) => {
+            out.push({ kind: 'album', key: String(m.ratingKey), title: (m.parentTitle ? m.parentTitle + ' – ' : '') + (m.title || 'Album'), count: m.leafCount || null, section: d.title });
+          });
+        } catch { /* album er valgfritt */ }
+      }
+    } catch (e) { failed = failed || e; }
+    plexPlaylists = out;
+    if (!out.length && !quiet) {
+      notify(failed ? 'Kunne ikke hente musikk fra Plex: ' + failed.message
+        : 'Fant ingen musikk i Plex. Sjekk at musikken ligger i et bibliotek av typen «Musikk», og at Plex er ferdig med å skanne det.', failed ? 'error' : 'warn', { key: 'plex' });
     }
     renderPlex();
     return plexPlaylists;
   }
-  async function plexPlaylistTracks(key) {
-    const data = await plexServer(`/playlists/${encodeURIComponent(key)}/items`);
-    return ((data && data.MediaContainer && data.MediaContainer.Metadata) || []).map((m) => {
-      const part = m.Media && m.Media[0] && m.Media[0].Part && m.Media[0].Part[0];
-      if (!part || !part.key || !String(part.key).startsWith('/library/')) return null;
-      return {
-        tittel: m.title || 'Ukjent tittel',
-        artist: m.originalTitle || m.grandparentTitle || '',
-        source: 'plex',
-        plexKey: String(m.ratingKey),
-        partKey: String(part.key),
-        durationMs: Number(m.duration) || 0,
-        thumb: m.parentThumb || m.thumb || m.grandparentThumb || '',
-        dropMs: 0
-      };
-    }).filter(Boolean);
+  function plexMapTrack(m) {
+    const part = m.Media && m.Media[0] && m.Media[0].Part && m.Media[0].Part[0];
+    if (!part || !part.key || !String(part.key).startsWith('/library/')) return null;
+    return {
+      tittel: m.title || 'Ukjent tittel',
+      artist: m.originalTitle || m.grandparentTitle || '',
+      source: 'plex',
+      plexKey: String(m.ratingKey),
+      partKey: String(part.key),
+      durationMs: Number(m.duration) || 0,
+      thumb: m.parentThumb || m.thumb || m.grandparentThumb || '',
+      dropMs: 0
+    };
+  }
+  async function plexPlaylistTracks(entry) {
+    const path = entry.kind === 'library' ? `/library/sections/${encodeURIComponent(entry.key)}/all?type=10`
+      : entry.kind === 'album' ? `/library/metadata/${encodeURIComponent(entry.key)}/children`
+      : `/playlists/${encodeURIComponent(entry.key)}/items`;
+    const data = await plexServer(path);
+    return ((data && data.MediaContainer && data.MediaContainer.Metadata) || []).map(plexMapTrack).filter(Boolean);
   }
   function plexStreamUrl(t) {
     return `${plex.server.base}${t.partKey}?${new URLSearchParams({ 'X-Plex-Token': plex.server.token })}`;
@@ -1979,13 +2003,14 @@
   }
 
   async function importPlexPlaylist() {
-    const key = $('plexPlSel').value;
-    if (!key) { notify('Velg en Plex-spilleliste først.', 'warn', { key: 'playlist' }); return; }
+    const val = $('plexPlSel').value;
+    const entry = plexPlaylists.find((p) => p.kind + ':' + p.key === val);
+    if (!entry) { notify('Velg en spilleliste, et bibliotek eller et album først.', 'warn', { key: 'playlist' }); return; }
     const cat = adminCat;
     const btn = $('plexPlBtn');
     btn.disabled = true; btn.textContent = 'Henter …';
     try {
-      const list = await plexPlaylistTracks(key);
+      const list = await plexPlaylistTracks(entry);
       const existing = new Set(tracksIn(cat).map((t) => t.plexKey));
       let added = 0, dupes = 0;
       list.forEach((t) => {
@@ -1997,8 +2022,7 @@
       saveTracks();
       renderAll();
       updatePrepHint();
-      const pl = plexPlaylists.find((p) => p.key === key);
-      notify(`La til ${added} sanger fra «${pl ? pl.title : 'spillelisten'}» i «${CATS[cat].navn}»${dupes ? ` (${dupes} fantes fra før)` : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
+      notify(`La til ${added} sanger fra «${entry.title}» i «${CATS[cat].navn}»${dupes ? ` (${dupes} fantes fra før)` : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
     } catch (e) {
       notify('Kunne ikke hente spillelisten: ' + e.message, 'error', { key: 'playlist' });
     } finally {
@@ -2034,11 +2058,23 @@
     const ps = $('plexPlSel');
     const prev = ps.value;
     ps.textContent = '';
-    if (!plexPlaylists.length) { const o = document.createElement('option'); o.value = ''; o.textContent = plexReady() ? '— ingen lydspillelister funnet —' : '— koble til Plex først —'; ps.appendChild(o); }
-    plexPlaylists.forEach((p) => { const o = document.createElement('option'); o.value = p.key; o.textContent = `${p.title} (${p.count})`; ps.appendChild(o); });
-    if (prev && plexPlaylists.some((p) => p.key === prev)) ps.value = prev;
+    if (!plexPlaylists.length) { const o = document.createElement('option'); o.value = ''; o.textContent = plexReady() ? '— fant ingen musikk – trykk Oppdater —' : '— koble til Plex først —'; ps.appendChild(o); }
+    const groups = [['playlist', 'Spillelister'], ['library', 'Hele musikkbiblioteket'], ['album', 'Album']];
+    groups.forEach(([kind, label]) => {
+      const items = plexPlaylists.filter((p) => p.kind === kind);
+      if (!items.length) return;
+      const g = document.createElement('optgroup'); g.label = label;
+      items.forEach((p) => {
+        const o = document.createElement('option');
+        o.value = p.kind + ':' + p.key;
+        o.textContent = kind === 'library' ? `Alle sanger i «${p.title}»` : p.title + (p.count ? ` (${p.count})` : '');
+        g.appendChild(o);
+      });
+      ps.appendChild(g);
+    });
+    if (prev && plexPlaylists.some((p) => p.kind + ':' + p.key === prev)) ps.value = prev;
     $('plexPlBtn').disabled = !plexPlaylists.length;
-    $('plexPlHint').textContent = `Sangene legges i «${CATS[adminCat].navn}» (velg kategori over). Duplikater hoppes over.`;
+    $('plexPlHint').textContent = `Velg en spilleliste, hele musikkbiblioteket eller et album. Sangene legges i «${CATS[adminCat].navn}» (velg kategori over). Duplikater hoppes over.`;
   }
 
   /* ---------- Lydmotor (HTML Audio + Web Audio for volum/fade, også på iPad) ---------- */
