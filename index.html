@@ -992,7 +992,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
-  const APP_VERSION = '2026-11-23.6';
+  const APP_VERSION = '2026-11-23.7';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -1593,7 +1593,7 @@
   /** Stille helsesjekk: oppdager en «død» spiller før noen trykker MÅL!. */
   async function healthCheck() {
     if (usePlex()) {
-      if (plexToken() && document.visibilityState === 'visible' && !busy && !(local.el && !local.el.paused)) {
+      if (plexToken() && document.visibilityState === 'visible' && !busy && !(local.el && !local.el.paused) && !buf.playing) {
         if (!plexReady() || !(await plexPing(plex.server.base, plex.server.token))) await plexConnect(true);
       }
       return;
@@ -1654,7 +1654,7 @@
     if (liveState) { liveState.position = currentPos(); liveState.paused = true; liveState.stamp = performance.now(); }
   }
   async function outResume() {
-    if (usePlex()) { if (local.el && local.el.getAttribute('src')) { local.seq++; localSetVolume(effectiveVolume()); await local.el.play(); } return; }
+    if (usePlex()) { if (useBuf()) { await bufResume(); return; } if (local.el && local.el.getAttribute('src')) { local.seq++; localSetVolume(effectiveVolume()); await local.el.play(); } return; }
     if (!isRemote()) { if (player) await player.resume(); return; }
     try { await api('PUT', '/me/player/play?device_id=' + enc(output.deviceId)); }
     catch (e) { if (e.status !== 403) throw e; }
@@ -1662,13 +1662,13 @@
   }
   async function outSeek(ms) {
     ms = Math.max(0, Math.round(ms));
-    if (usePlex()) { if (local.el) local.el.currentTime = ms / 1000; return; }
+    if (usePlex()) { if (useBuf()) { await bufSeek(ms); return; } if (local.el) local.el.currentTime = ms / 1000; return; }
     if (!isRemote()) { if (player) await player.seek(ms); return; }
     await api('PUT', `/me/player/seek?position_ms=${ms}&device_id=${enc(output.deviceId)}`);
     if (liveState) { liveState.position = ms; liveState.stamp = performance.now(); updateProgress(); }
   }
   async function outToggle() {
-    if (usePlex()) { const el = local.el; if (!el || !el.getAttribute('src')) return; if (el.paused) { local.seq++; localSetVolume(effectiveVolume()); await el.play(); } else localHardStop(); return; }
+    if (usePlex()) { if (useBuf()) { if (buf.playing) localHardStop(); else await bufResume(); return; } const el = local.el; if (!el || !el.getAttribute('src')) return; if (el.paused) { local.seq++; localSetVolume(effectiveVolume()); await el.play(); } else localHardStop(); return; }
     if (!isRemote()) { if (player) await player.togglePlay(); return; }
     if (liveState && !liveState.paused) await outPause(); else await outResume();
   }
@@ -1680,6 +1680,7 @@
   /** Fersk avspillingsstatus: { position, duration, uri, linkedUri } eller null. */
   async function outGetState() {
     if (usePlex()) {
+      if (useBuf()) return buf.track ? { position: bufPos() * 1000, duration: buf.dur * 1000, uri: trackUri(buf.track) } : null;
       const el = local.el;
       if (!el || !local.track || !el.getAttribute('src')) return null;
       return { position: el.currentTime * 1000, duration: (el.duration || 0) * 1000, uri: trackUri(local.track) };
@@ -2296,6 +2297,7 @@
   }
   /** Kalles direkte i et klikk/tastetrykk: låser opp lyd (viktig på iPad). */
   function localUnlock() {
+    if (useBuf()) { bufUnlock(); return; }
     const el = localEl();
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -2320,16 +2322,16 @@
     if (local.wa && local.gain) {
       const g = local.gain.gain;
       try { g.cancelScheduledValues(local.ctx.currentTime); } catch { /* ignorer */ }
-      g.value = local.el === local.elWA ? v : 1;
+      g.value = (useBuf() || local.el === local.elWA) ? v : 1;
     }
-    if (local.el && local.el !== local.elWA) { try { local.el.volume = v; } catch { /* iOS: skrivebeskyttet */ } }
+    if (!useBuf() && local.el && local.el !== local.elWA) { try { local.el.volume = v; } catch { /* iOS: skrivebeskyttet */ } }
   }
   /**
    * Planlegger fade-ut på lydmotorens egen klokke (Web Audio). Gjennomføres av lydsystemet selv om
    * nettsiden settes på vent (låst skjerm / bakgrunn på mobil). Returnerer false hvis ikke mulig.
    */
   function localScheduleFade(delaySec, durSec) {
-    if (!(local.wa && local.gain && local.ctx) || local.el !== local.elWA) return false;
+    if (!(local.wa && local.gain && local.ctx) || (!useBuf() && local.el !== local.elWA)) return false;
     if (local.ctx.state !== 'running') { try { local.ctx.resume(); } catch { /* ignorer */ } if (local.ctx.state !== 'running') return false; }
     const g = local.gain.gain, now = local.ctx.currentTime, v = g.value;
     try {
@@ -2341,10 +2343,13 @@
     } catch { return false; }
   }
   function localGetVolume() {
-    if (local.wa && local.gain && local.el === local.elWA) return local.gain.gain.value;
+    if (local.wa && local.gain && (useBuf() || local.el === local.elWA)) return local.gain.gain.value;
     return local.el ? local.el.volume : effectiveVolume();
   }
-  function localStop() { [local.elWA, local.elPlain].forEach((x) => { if (x) { try { x.pause(); } catch { /* ignorer */ } } }); }
+  function localStop() {
+    [local.elWA, local.elPlain].forEach((x) => { if (x) { try { x.pause(); } catch { /* ignorer */ } } });
+    if (buf.playing || buf.src) bufPause();
+  }
   /** Stopper sikkert: demper med en gang, pauser, og sjekker igjen etterpå (med mindre en ny sang er startet). */
   function localHardStop() {
     const seq = ++local.seq;
@@ -2355,6 +2360,109 @@
     }
     localStop();
     [300, 1000].forEach((ms) => setTimeout(() => { if (local.seq === seq && !local.trying) localStop(); }, ms));
+  }
+
+  /* ---------- Buffer-motor for iPhone/iPad (WebKit) ----------
+   * WebKit mister kontrollen over en <audio> koblet til Web Audio når kilden byttes (sang 2 lar seg ikke
+   * stoppe/fade). Her pakkes sangen ut og spilles direkte i lydmotoren: nøyaktig start, fade og stopp. */
+  const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const FORCE_BUF = new URLSearchParams(location.search).has('bufmotor');
+  const useBuf = () => (IS_IOS || FORCE_BUF) && !!(window.AudioContext || window.webkitAudioContext);
+  const buf = { cache: new Map(), lru: [], src: null, startedAt: 0, offset: 0, playing: false, track: null, dur: 0, progTimer: null };
+  function bufEnsureCtx() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!local.ctx) local.ctx = new AC();
+    if (!local.gain) { local.gain = local.ctx.createGain(); local.gain.connect(local.ctx.destination); local.wa = true; }
+    if (local.ctx.state !== 'running') { try { local.ctx.resume(); } catch { /* ignorer */ } }
+  }
+  /** Kalles i et trykk: låser opp lyden på iPhone. */
+  function bufUnlock() {
+    try {
+      bufEnsureCtx();
+      if (!local.unlocked) {
+        local.unlocked = true;
+        const b = local.ctx.createBuffer(1, 1, 22050);
+        const s = local.ctx.createBufferSource(); s.buffer = b; s.connect(local.ctx.destination); s.start(0);
+      }
+    } catch { /* ignorer */ }
+  }
+  function bufDecode(ab) {
+    return new Promise((res, rej) => { const p = local.ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); });
+  }
+  /** Henter og pakker ut en sang (fra enheten hvis lastet ned, ellers fra Plex). Holder maks 3 i minnet. */
+  function bufGet(t) {
+    const key = t.plexKey;
+    if (buf.cache.has(key)) { buf.lru = buf.lru.filter((k) => k !== key).concat(key); return buf.cache.get(key); }
+    const p = (async () => { bufEnsureCtx(); return bufDecode(await audioArrayBuffer(t)); })();
+    buf.cache.set(key, p);
+    buf.lru.push(key);
+    p.catch(() => { buf.cache.delete(key); buf.lru = buf.lru.filter((k) => k !== key); });
+    while (buf.lru.length > 3) {
+      const old = buf.lru.shift();
+      if (!(buf.track && buf.track.plexKey === old)) buf.cache.delete(old); else buf.lru.push(old);
+      if (buf.lru.length <= 3) break;
+    }
+    return p;
+  }
+  function bufPos() {
+    if (!local.ctx) return buf.offset;
+    return buf.playing ? Math.min(buf.dur, buf.offset + (local.ctx.currentTime - buf.startedAt)) : buf.offset;
+  }
+  function bufStopSource() {
+    const s = buf.src;
+    buf.src = null;
+    if (s) { s.onended = null; try { s.stop(); } catch { /* ignorer */ } try { s.disconnect(); } catch { /* ignorer */ } }
+  }
+  function bufStartAt(ab, offSec) {
+    bufStopSource();
+    const s = local.ctx.createBufferSource();
+    s.buffer = ab;
+    s.connect(local.gain);
+    const off = Math.max(0, Math.min(offSec, ab.duration - 0.05));
+    s.start(0, off);
+    buf.src = s; buf.startedAt = local.ctx.currentTime; buf.offset = off; buf.playing = true; buf.dur = ab.duration;
+    s.onended = () => { if (buf.src === s) { buf.offset = buf.dur; buf.playing = false; buf.src = null; onBufState(true); } };
+    clearInterval(buf.progTimer);
+    buf.progTimer = setInterval(() => { if (buf.playing) onBufState(false); }, 500);
+  }
+  function bufPause() {
+    if (buf.playing) { buf.offset = bufPos(); buf.playing = false; }
+    bufStopSource();
+    onBufState(true);
+  }
+  async function bufResume() {
+    if (buf.playing || !buf.track) return;
+    const ab = await bufGet(buf.track);
+    local.seq++;
+    localSetVolume(effectiveVolume());
+    bufStartAt(ab, buf.offset);
+    onBufState(true);
+  }
+  async function bufSeek(ms) {
+    buf.offset = Math.max(0, ms / 1000);
+    if (buf.playing && buf.track) { const ab = await bufGet(buf.track); bufStartAt(ab, buf.offset); }
+    onBufState(true);
+  }
+  function onBufState(full) {
+    const t = buf.track;
+    if (!t) return;
+    liveState = {
+      paused: !buf.playing, position: bufPos() * 1000, duration: (buf.dur * 1000) || t.durationMs || 0, stamp: performance.now(),
+      uri: trackUri(t), name: t.tittel, artists: t.artist, image: plexThumbUrl(t)
+    };
+    if (full) renderNowPlaying(); else updateProgress();
+  }
+  /** Gjør neste mål-sang klar i bakgrunnen, så MÅL spiller uten ventetid. */
+  const preselected = {};
+  function prepareNext(cat) {
+    if (!useBuf()) return;
+    const usable = usableTracks(cat);
+    if (!usable.length) return;
+    let remaining = usable.filter((t) => !played[cat].includes(t.id));
+    if (!remaining.length) remaining = usable.length > 1 ? usable.filter((t) => t.id !== played[cat][played[cat].length - 1]) : usable;
+    const t = remaining[Math.floor(Math.random() * remaining.length)];
+    preselected[cat] = t.id;
+    if (plexReady() || t.source === 'plex') bufGet(t).catch(() => {});
   }
 
   function onLocalState(full) {
@@ -2371,7 +2479,8 @@
 
   async function playLocal(track, mode) {
     let cachedUrl = null;
-    try { cachedUrl = await audioCacheUrl(track); } catch { cachedUrl = null; }
+    if (useBuf() && buf.cache.has(track.plexKey)) cachedUrl = 'buffer';
+    else { try { cachedUrl = await audioCacheUrl(track); } catch { cachedUrl = null; } }
     if (!cachedUrl && !plexReady()) {
       const ok = plexToken() ? await plexConnect(false) : false;
       if (!ok) {
@@ -2386,6 +2495,33 @@
     local.seq++;
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     localUnlock();
+    if (useBuf()) {
+      const startSec = Math.max(0, (track.dropMs || 0) / 1000);
+      dbg('spill (buffer) ' + (track.tittel || '').slice(0, 24) + ' fra ' + startSec.toFixed(1) + ' s');
+      localStop();
+      const mySeq = ++local.seq; // trykkes stopp mens sangen lastes, skal den ikke starte etterpå
+      buf.track = track;
+      local.track = track;
+      try {
+        const ready = buf.cache.has(track.plexKey);
+        if (!ready) notify('Laster sangen …', 'info', { key: 'loading', timeout: 2500 });
+        const ab = await bufGet(track);
+        clearNotice('loading');
+        if (local.seq !== mySeq) { dbg('avbrutt mens sangen lastet'); return false; }
+        bufEnsureCtx();
+        localSetVolume(effectiveVolume());
+        bufStartAt(ab, startSec);
+      } catch (e) {
+        dbg('feil (buffer): ' + (e && (e.name || e.message)));
+        notify('Kunne ikke spille sangen (' + ((e && e.message) || 'ukjent feil') + '). Sjekk at PC-en med Plex er på og har nett, eller last ned sangene til enheten.', 'error', { key: 'play' });
+        return false;
+      }
+      dbg('spiller (buffer-motor)');
+      clearNotice('play');
+      nowPlaying = { track, mode, at: Date.now() };
+      onBufState(true);
+      return true;
+    }
     // Nedlastet sang brukes først; ellers strømmes den fra Plex
     const url = cachedUrl || plexStreamUrl(track);
     local.track = track;
@@ -2779,6 +2915,9 @@
   function pickNext(cat) {
     const usable = usableTracks(cat);
     if (!usable.length) return null;
+    const pre = preselected[cat] && usable.find((t) => t.id === preselected[cat] && !played[cat].includes(t.id));
+    delete preselected[cat];
+    if (pre) return pre;
     let remaining = usable.filter((t) => !played[cat].includes(t.id));
     if (!remaining.length) {
       const last = played[cat][played[cat].length - 1];
@@ -2811,6 +2950,7 @@
         savePlayed();
         roundCat = cat;
         if (cat === 'mal' && settings.autoStopSek > 0) scheduleAutoStop(settings.autoStopSek * 1000);
+        setTimeout(() => prepareNext(cat), 1500);
         renderRound();
         renderNowPlaying();
         btn.classList.remove('flash'); void btn.offsetWidth; btn.classList.add('flash');
@@ -3624,7 +3764,8 @@
     // Les posisjonen umiddelbart (lokalt estimat) – en API-forespørsel ville gitt ekstra forsinkelse.
     let pos = null;
     if (usePlex()) {
-      if (local.el && local.track && trackUri(local.track) === trackUri(t) && local.el.getAttribute('src')) pos = local.el.currentTime * 1000;
+      if (useBuf()) { if (buf.track && trackUri(buf.track) === trackUri(t)) pos = bufPos() * 1000; }
+      else if (local.el && local.track && trackUri(local.track) === trackUri(t) && local.el.getAttribute('src')) pos = local.el.currentTime * 1000;
     } else if (isRemote()) {
       if (liveState && (liveState.uri === t.spotifyUri || liveState.linkedUri === t.spotifyUri)) pos = currentPos();
     } else if (player) {
@@ -3682,7 +3823,10 @@
   async function finderSeek(delta) {
     try {
       let pos, dur;
-      if (usePlex()) {
+      if (usePlex() && useBuf()) {
+        if (!buf.track) return;
+        pos = bufPos() * 1000; dur = buf.dur * 1000 || Infinity;
+      } else if (usePlex()) {
         const el = local.el;
         if (!el || !el.getAttribute('src')) return;
         pos = el.currentTime * 1000; dur = Number.isFinite(el.duration) ? el.duration * 1000 : Infinity;
@@ -3771,7 +3915,7 @@
     const draw = () => {
       box.textContent = [
         `KampDJ v${APP_VERSION} · ${isAdmin ? 'admin' : 'besøkende'} · kilde ${source}`,
-        `motor: ${local.el === local.elWA ? 'Web Audio' : local.el === local.elPlain ? 'enkel (reserve)' : '-'} · preferPlain=${local.preferPlain} · ctx=${local.ctx ? local.ctx.state : '-'} · gain=${local.gain ? local.gain.gain.value.toFixed(2) : '-'}`,
+        `motor: ${useBuf() ? 'buffer (iPhone)' + ' spiller=' + buf.playing + ' pos=' + bufPos().toFixed(1) + ' klar=' + buf.lru.length : local.el === local.elWA ? 'Web Audio' : local.el === local.elPlain ? 'enkel (reserve)' : '-'} · preferPlain=${local.preferPlain} · ctx=${local.ctx ? local.ctx.state : '-'} · gain=${local.gain ? local.gain.gain.value.toFixed(2) : '-'}`,
         st(local.elWA, 'WA   '), st(local.elPlain, 'enkel'),
         `autostopp: ${autoStopAt ? Math.max(0, Math.round((autoStopAt - Date.now()) / 100) / 10) + ' s' : '-'} · fading=${isFading} · timer=${autoStopTimer ? 'ja' : 'nei'}`,
         `plex: ${plexReady() ? plex.server.name + (plex.server.relay ? ' (relé)' : plex.server.local ? ' (lokal)' : ' (fjern)') : 'ikke tilkoblet'}`,
@@ -4203,6 +4347,7 @@
       if (data) applyFixedList(data);
       else { tracks = []; renderAll(); notify('Ingen sanger er publisert ennå.', 'info', { key: 'fixed', timeout: 0 }); }
       updatePrepHint();
+      if (useBuf()) setTimeout(() => { try { bufEnsureCtx(); } catch { /* ignorer */ } prepareNext('mal'); }, 2500);
       if (plexToken()) {
         const ok = await plexConnect(true);
         if (!ok) notify('Musikkserveren er ikke tilgjengelig akkurat nå. Prøv igjen om litt.', 'error', { key: 'plex' });
