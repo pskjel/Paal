@@ -1,7 +1,8 @@
 {
-  "app": "idrettshall-soundboard",
-  "versjon": 2,
-  "eksportert": "2026-11-23T10:58:34.213Z",
+  "app": "kampdj",
+  "versjon": 3,
+  "publisert": "2026-11-23T11:05:31+00:00",
+  "kilde": "plex",
   "innstillinger": {
     "autoStopSek": 7,
     "autoStopFade": true,
@@ -9,62 +10,9 @@
       "mal": 100,
       "timeout": 65,
       "pause": 70
-    },
-    "finder": {
-      "startSek": 30,
-      "reaksjonSek": 0.2,
-      "bareUtenDropp": true
     }
   },
   "tracks": [
-    {
-      "id": "std-1",
-      "kategori": "mal",
-      "tittel": "We Will Rock You",
-      "artist": "Queen",
-      "spotifyUri": "spotify:track:54flyrjcdnQdco7300avMJ",
-      "dropMs": 0
-    },
-    {
-      "id": "std-2",
-      "kategori": "mal",
-      "tittel": "Seven Nation Army",
-      "artist": "The White Stripes",
-      "spotifyUri": "spotify:track:7i6r9KotUPQg3ozKKgEPIN",
-      "dropMs": 0
-    },
-    {
-      "id": "std-3",
-      "kategori": "mal",
-      "tittel": "Levels",
-      "artist": "Avicii",
-      "spotifyUri": "spotify:track:5UqCQaDshqbIk3pkhy4Pjg",
-      "dropMs": 62000
-    },
-    {
-      "id": "std-4",
-      "kategori": "mal",
-      "tittel": "Don't You Worry Child",
-      "artist": "Swedish House Mafia, John Martin",
-      "spotifyUri": "spotify:track:2V65y3PX4DkRhy1djlxd9p",
-      "dropMs": 82000
-    },
-    {
-      "id": "std-5",
-      "kategori": "mal",
-      "tittel": "Sandstorm",
-      "artist": "Darude",
-      "spotifyUri": "spotify:track:6Sy9BUbgFse0n0LPA5lwy5",
-      "dropMs": 0
-    },
-    {
-      "id": "std-6",
-      "kategori": "mal",
-      "tittel": "Song 2",
-      "artist": "Blur",
-      "spotifyUri": "spotify:track:3GfOAdcoc3X5GPiiXmpBjK",
-      "dropMs": 8500
-    },
     {
       "id": "tmwt1c9vtero4d",
       "kategori": "mal",
@@ -75,7 +23,6 @@
       "partKey": "/library/parts/31227/1679605690/file.mp3",
       "durationMs": 232519,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 148300,
       "dropSource": "manual"
     },
@@ -89,7 +36,6 @@
       "partKey": "/library/parts/31258/1686675197/file.mp3",
       "durationMs": 239020,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 169700,
       "dropSource": "manual"
     },
@@ -103,7 +49,6 @@
       "partKey": "/library/parts/31252/1682707765/file.mp3",
       "durationMs": 212376,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 73500,
       "dropSource": "manual"
     },
@@ -117,7 +62,6 @@
       "partKey": "/library/parts/31255/1680685241/file.mp3",
       "durationMs": 274338,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 196400,
       "dropSource": "manual"
     },
@@ -131,7 +75,6 @@
       "partKey": "/library/parts/31309/1680685243/file.mp3",
       "durationMs": 213368,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 75100,
       "dropSource": "manual"
     },
@@ -145,7 +88,6 @@
       "partKey": "/library/parts/31225/1680890299/file.mp3",
       "durationMs": 207729,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 63100,
       "dropSource": "manual"
     },
@@ -159,7 +101,6 @@
       "partKey": "/library/parts/31312/1680685246/file.mp3",
       "durationMs": 228519,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 59900,
       "dropSource": "manual"
     },
@@ -173,7 +114,6 @@
       "partKey": "/library/parts/31296/1680685235/file.mp3",
       "durationMs": 228545,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 193200,
       "dropSource": "manual"
     },
@@ -187,7 +127,6 @@
       "partKey": "/library/parts/31308/1680685245/file.mp3",
       "durationMs": 205322,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 82200,
       "dropSource": "manual"
     },
@@ -201,7 +140,6 @@
       "partKey": "/library/parts/31226/1680685236/file.mp3",
       "durationMs": 324049,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 107500,
       "dropSource": "manual"
     },
@@ -215,7 +153,6 @@
       "partKey": "/library/parts/31303/1680685238/file.mp3",
       "durationMs": 172617,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 109800,
       "dropSource": "manual"
     },
@@ -229,7 +166,6 @@
       "partKey": "/library/parts/31281/1682187167/file.mp3",
       "durationMs": 241920,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 90400,
       "dropSource": "manual"
     },
@@ -243,7 +179,6 @@
       "partKey": "/library/parts/31261/1680685237/file.mp3",
       "durationMs": 159869,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 31200,
       "dropSource": "manual"
     },
@@ -257,7 +192,6 @@
       "partKey": "/library/parts/31259/1680950454/file.mp3",
       "durationMs": 146808,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 31800,
       "dropSource": "manual"
     },
@@ -271,7 +205,6 @@
       "partKey": "/library/parts/31278/1680685237/file.mp3",
       "durationMs": 200359,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 138500,
       "dropSource": "manual"
     },
@@ -285,7 +218,6 @@
       "partKey": "/library/parts/31292/1682187168/file.mp3",
       "durationMs": 297482,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 111500,
       "dropSource": "manual"
     },
@@ -299,7 +231,6 @@
       "partKey": "/library/parts/31273/1682707755/file.mp3",
       "durationMs": 216036,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 68100,
       "dropSource": "manual"
     },
@@ -313,7 +244,6 @@
       "partKey": "/library/parts/31290/1680685234/file.mp3",
       "durationMs": 219716,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 154800,
       "dropSource": "manual"
     },
@@ -327,7 +257,6 @@
       "partKey": "/library/parts/31271/1680887063/file.mp3",
       "durationMs": 211931,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 71000,
       "dropSource": "manual"
     },
@@ -341,7 +270,6 @@
       "partKey": "/library/parts/31282/1680685247/file.mp3",
       "durationMs": 241946,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 150600,
       "dropSource": "manual"
     },
@@ -355,7 +283,6 @@
       "partKey": "/library/parts/31245/1680950454/file.mp3",
       "durationMs": 179696,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 74700,
       "dropSource": "manual"
     },
@@ -369,7 +296,6 @@
       "partKey": "/library/parts/31291/1680685238/file.mp3",
       "durationMs": 158642,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 126800,
       "dropSource": "manual"
     },
@@ -383,7 +309,6 @@
       "partKey": "/library/parts/31241/1680886666/file.mp3",
       "durationMs": 259004,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 71000,
       "dropSource": "manual"
     },
@@ -397,7 +322,6 @@
       "partKey": "/library/parts/31276/1682187168/file.mp3",
       "durationMs": 315402,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 209700,
       "dropSource": "manual"
     },
@@ -411,7 +335,6 @@
       "partKey": "/library/parts/31304/1682187169/file.mp3",
       "durationMs": 163370,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 123500,
       "dropSource": "manual"
     },
@@ -425,7 +348,6 @@
       "partKey": "/library/parts/31240/1680685236/file.mp3",
       "durationMs": 240248,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 76900,
       "dropSource": "manual"
     },
@@ -439,7 +361,6 @@
       "partKey": "/library/parts/31238/1680886665/file.mp3",
       "durationMs": 205688,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 146300,
       "dropSource": "manual"
     },
@@ -453,7 +374,6 @@
       "partKey": "/library/parts/31218/1680685244/file.mp3",
       "durationMs": 242002,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 163500,
       "dropSource": "manual"
     },
@@ -467,7 +387,6 @@
       "partKey": "/library/parts/31244/1682707756/file.mp3",
       "durationMs": 151667,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 21000,
       "dropSource": "manual"
     },
@@ -481,7 +400,6 @@
       "partKey": "/library/parts/31242/1680685247/file.mp3",
       "durationMs": 188212,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 124600,
       "dropSource": "manual"
     },
@@ -495,7 +413,6 @@
       "partKey": "/library/parts/31288/1680685242/file.mp3",
       "durationMs": 128026,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 93600,
       "dropSource": "manual"
     },
@@ -509,7 +426,6 @@
       "partKey": "/library/parts/31293/1680685234/file.mp3",
       "durationMs": 150309,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 67300,
       "dropSource": "manual"
     },
@@ -523,7 +439,6 @@
       "partKey": "/library/parts/31249/1682187166/file.mp3",
       "durationMs": 188630,
       "thumb": "/library/metadata/10862/thumb/1795423882",
-      "fileName": "",
       "dropMs": 36000,
       "dropSource": "manual"
     },
