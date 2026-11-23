@@ -992,7 +992,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
-  const APP_VERSION = '2026-11-23.7';
+  const APP_VERSION = '2026-11-23.8';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -2375,9 +2375,28 @@
     if (!local.gain) { local.gain = local.ctx.createGain(); local.gain.connect(local.ctx.destination); local.wa = true; }
     if (local.ctx.state !== 'running') { try { local.ctx.resume(); } catch { /* ignorer */ } }
   }
+  /**
+   * iPhone demper ren Web Audio når lydløs-bryteren er på («omgivelseslyd»). Vi ber om medieavspilling:
+   * navigator.audioSession (nyere iOS) + en stille, løkkende <audio> som holder lydøkten i «playback».
+   */
+  let keepAliveEl = null;
+  function iosPlaybackSession() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* ikke støttet */ }
+    try {
+      if (!keepAliveEl) {
+        keepAliveEl = document.createElement('audio');
+        keepAliveEl.loop = true;
+        keepAliveEl.preload = 'auto';
+        keepAliveEl.setAttribute('playsinline', '');
+        keepAliveEl.src = silentWavUrl();
+      }
+      if (keepAliveEl.paused) keepAliveEl.play().catch((e) => dbg('lydøkt: ' + (e && e.name)));
+    } catch { /* ignorer */ }
+  }
   /** Kalles i et trykk: låser opp lyden på iPhone. */
   function bufUnlock() {
     try {
+      iosPlaybackSession();
       bufEnsureCtx();
       if (!local.unlocked) {
         local.unlocked = true;
@@ -2509,6 +2528,9 @@
         clearNotice('loading');
         if (local.seq !== mySeq) { dbg('avbrutt mens sangen lastet'); return false; }
         bufEnsureCtx();
+        if (local.ctx.state !== 'running') { try { await local.ctx.resume(); } catch { /* ignorer */ } }
+        dbg('lydmotor: ' + local.ctx.state + (keepAliveEl ? ' · økt ' + (keepAliveEl.paused ? 'AV' : 'på') : ''));
+        if (local.ctx.state !== 'running') notify('Trykk én gang på skjermen for å slå på lyden, og prøv igjen.', 'warn', { key: 'autoplay', timeout: 6000 });
         localSetVolume(effectiveVolume());
         bufStartAt(ab, startSec);
       } catch (e) {
@@ -3917,6 +3939,7 @@
         `KampDJ v${APP_VERSION} · ${isAdmin ? 'admin' : 'besøkende'} · kilde ${source}`,
         `motor: ${useBuf() ? 'buffer (iPhone)' + ' spiller=' + buf.playing + ' pos=' + bufPos().toFixed(1) + ' klar=' + buf.lru.length : local.el === local.elWA ? 'Web Audio' : local.el === local.elPlain ? 'enkel (reserve)' : '-'} · preferPlain=${local.preferPlain} · ctx=${local.ctx ? local.ctx.state : '-'} · gain=${local.gain ? local.gain.gain.value.toFixed(2) : '-'}`,
         st(local.elWA, 'WA   '), st(local.elPlain, 'enkel'),
+        `lydøkt: ${navigator.audioSession ? navigator.audioSession.type : 'n/a'} · stille løkke: ${keepAliveEl ? (keepAliveEl.paused ? 'AV' : 'på') : '-'}`,
         `autostopp: ${autoStopAt ? Math.max(0, Math.round((autoStopAt - Date.now()) / 100) / 10) + ' s' : '-'} · fading=${isFading} · timer=${autoStopTimer ? 'ja' : 'nei'}`,
         `plex: ${plexReady() ? plex.server.name + (plex.server.relay ? ' (relé)' : plex.server.local ? ' (lokal)' : ' (fjern)') : 'ikke tilkoblet'}`,
         `synlig: ${document.visibilityState} · ${navigator.userAgent.slice(0, 90)}`,
