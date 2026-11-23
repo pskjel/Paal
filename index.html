@@ -1942,7 +1942,50 @@
     if (!res.ok) { const e = new Error('Plex-serveren svarte ' + res.status); e.status = res.status; throw e; }
     return res.json();
   }
-  /** Henter alt som kan importeres: spillelister, hele musikkbiblioteker og album. */
+  /* ---------- Mapper i Plex-biblioteket (slik filene ligger på disken) ---------- */
+  function plexFolderItems(data) {
+    const mc = (data && data.MediaContainer) || {};
+    const all = [].concat(mc.Directory || [], mc.Metadata || []);
+    const folders = [], tracksOut = [];
+    all.forEach((it) => {
+      const key = String(it.key || '');
+      if (it.Media && (it.type === 'track' || !it.type)) tracksOut.push(it);
+      else if (key.startsWith('/library/') && key.includes('/folder')) folders.push({ key, title: it.title || 'Mappe' });
+    });
+    return { folders, tracks: tracksOut };
+  }
+  /** Lister mapper rekursivt (begrenset dybde og antall) for valglisten. */
+  async function plexListFolders(sectionKey, sectionTitle) {
+    const out = [];
+    const walk = async (path, prefix, depth) => {
+      if (depth > 3 || out.length >= 400) return;
+      let data;
+      try { data = await plexServer(path); } catch { return; }
+      const { folders } = plexFolderItems(data);
+      for (const f of folders) {
+        if (out.length >= 400) break;
+        const label = prefix ? `${prefix} / ${f.title}` : f.title;
+        out.push({ kind: 'folder', key: f.key, title: label, section: sectionTitle, depth });
+        await walk(f.key, label, depth + 1);
+      }
+    };
+    await walk(`/library/sections/${encodeURIComponent(sectionKey)}/folder`, '', 0);
+    return out;
+  }
+  /** Alle sanger i en mappe, inkludert undermapper. */
+  async function plexFolderTracks(path) {
+    const result = [];
+    const walk = async (p, depth) => {
+      if (depth > 8 || result.length >= 3000) return;
+      const { folders, tracks: tr } = plexFolderItems(await plexServer(p));
+      tr.forEach((m) => result.push(m));
+      for (const f of folders) await walk(f.key, depth + 1);
+    };
+    await walk(path, 0);
+    return result;
+  }
+
+  /** Henter alt som kan importeres: mapper, spillelister, hele musikkbiblioteker og album. */
   async function loadPlexPlaylists(quiet) {
     const out = [];
     let failed = null;
@@ -1956,6 +1999,7 @@
       const sec = await plexServer('/library/sections');
       const music = ((sec && sec.MediaContainer && sec.MediaContainer.Directory) || []).filter((d) => d.type === 'artist');
       for (const d of music) {
+        try { (await plexListFolders(d.key, d.title || 'Musikk')).forEach((f) => out.push(f)); } catch { /* mapper er valgfritt */ }
         out.push({ kind: 'library', key: String(d.key), title: d.title || 'Musikk', count: null });
         try {
           const al = await plexServer(`/library/sections/${encodeURIComponent(d.key)}/all?type=9`);
@@ -1988,6 +2032,7 @@
     };
   }
   async function plexPlaylistTracks(entry) {
+    if (entry.kind === 'folder') return (await plexFolderTracks(entry.key)).map(plexMapTrack).filter(Boolean);
     const path = entry.kind === 'library' ? `/library/sections/${encodeURIComponent(entry.key)}/all?type=10`
       : entry.kind === 'album' ? `/library/metadata/${encodeURIComponent(entry.key)}/children`
       : `/playlists/${encodeURIComponent(entry.key)}/items`;
@@ -2059,7 +2104,7 @@
     const prev = ps.value;
     ps.textContent = '';
     if (!plexPlaylists.length) { const o = document.createElement('option'); o.value = ''; o.textContent = plexReady() ? '— fant ingen musikk – trykk Oppdater —' : '— koble til Plex først —'; ps.appendChild(o); }
-    const groups = [['playlist', 'Spillelister'], ['library', 'Hele musikkbiblioteket'], ['album', 'Album']];
+    const groups = [['folder', 'Mapper'], ['playlist', 'Spillelister'], ['library', 'Hele musikkbiblioteket'], ['album', 'Album']];
     groups.forEach(([kind, label]) => {
       const items = plexPlaylists.filter((p) => p.kind === kind);
       if (!items.length) return;
@@ -2067,14 +2112,17 @@
       items.forEach((p) => {
         const o = document.createElement('option');
         o.value = p.kind + ':' + p.key;
-        o.textContent = kind === 'library' ? `Alle sanger i «${p.title}»` : p.title + (p.count ? ` (${p.count})` : '');
+        o.textContent = kind === 'library' ? `Alle sanger i «${p.title}»`
+          : kind === 'folder' ? '\u00a0\u00a0\u00a0'.repeat(p.depth || 0) + p.title.split(' / ').pop()
+          : p.title + (p.count ? ` (${p.count})` : '');
+        if (kind === 'folder') o.title = p.title;
         g.appendChild(o);
       });
       ps.appendChild(g);
     });
     if (prev && plexPlaylists.some((p) => p.kind + ':' + p.key === prev)) ps.value = prev;
     $('plexPlBtn').disabled = !plexPlaylists.length;
-    $('plexPlHint').textContent = `Velg en spilleliste, hele musikkbiblioteket eller et album. Sangene legges i «${CATS[adminCat].navn}» (velg kategori over). Duplikater hoppes over.`;
+    $('plexPlHint').textContent = `Velg en mappe (inkludert undermapper), en spilleliste, hele musikkbiblioteket eller et album. Sangene legges i «${CATS[adminCat].navn}» (velg kategori over). Duplikater hoppes over.`;
   }
 
   /* ---------- Lydmotor (HTML Audio + Web Audio for volum/fade, også på iPad) ---------- */
