@@ -1003,7 +1003,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
-  const APP_VERSION = '2026-11-23.9';
+  const APP_VERSION = '2026-11-23.10';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -4434,6 +4434,18 @@
         settings = sanitizeSettings({ ...settings, ...d.innstillinger, vol: { ...settings.vol, ...(d.innstillinger.vol || {}) } });
         saveSettings();
         renderSettings();
+      }
+      // Ingen egen redigeringsliste i denne nettleseren: start med den publiserte listen
+      if (!tracks.some((t) => t.source === 'plex') && Array.isArray(d.tracks) && d.tracks.length) {
+        const pub = dedupeIds(d.tracks.map((t) => normalizeTrack(t)).filter(Boolean)).filter((t) => t.source === 'plex');
+        if (pub.length) {
+          tracks = tracks.filter((t) => t.source !== 'plex').concat(pub);
+          played = loadPlayed();
+          saveTracks();
+          renderAll();
+          updatePrepHint();
+          notify(`Hentet den publiserte listen (${pub.length} sanger) til redigering i denne nettleseren.`, 'info', { key: 'publish', timeout: 7000 });
+        }
       }
       renderGoalLen();
     });
