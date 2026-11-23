@@ -432,6 +432,24 @@
   .gate-admin::after { content: ""; width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); }
   body:not(.simple) .gate-admin { display: none; }
 
+  /* Lydkilde */
+  body.src-plex .spotify-only { display: none !important; }
+  body:not(.src-plex) .plex-only { display: none !important; }
+  #sourceSeg button[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); }
+  #fnAccept { width: 100%; border-color: #4A3F2A; color: var(--gold); }
+
+  /* Brukervilkår og personvern */
+  .finder.legal { width: min(760px, 100%); max-height: calc(100vh - 32px); }
+  .legal-h { color: var(--text) !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--display); font-stretch: 112%; font-size: 1.7rem !important; font-weight: 800; margin: 0; }
+  .legal-doc { overflow-y: auto; max-height: 46vh; padding: 4px 18px 4px 4px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: .9rem; line-height: 1.6; color: var(--text2); }
+  .legal-doc h4 { color: var(--text); margin: 18px 0 6px; font-size: .95rem; }
+  .legal-doc ul { padding-left: 20px; margin: 6px 0; }
+  .legal-doc li { margin: 4px 0; }
+  .legal-doc b { color: var(--text); font-weight: 600; }
+  .legal-links { margin: 14px 0 0; display: flex; gap: 10px; justify-content: center; font-size: .8rem; color: var(--muted); }
+  .legal-links a { color: var(--muted); }
+  .legal-links a:hover { color: var(--text); }
+
   footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #222227; color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 10px 26px; }
   footer kbd { margin-right: 6px; }
   [hidden] { display: none !important; }
@@ -514,6 +532,29 @@
     <summary><span class="sum-ic"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"></path><circle cx="16" cy="7" r="2"></circle><circle cx="10" cy="17" r="2"></circle></svg></span> <span id="setupTitle">Spotify-oppsett</span> <span class="sum-extra" id="setupSummary"></span></summary>
     <div class="panel-body">
       <div class="admin-only">
+        <label class="lbl">Lydkilde</label>
+        <div class="seg" id="sourceSeg" role="group" aria-label="Lydkilde" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:0">
+          <button type="button" data-source="plex">Plex (egen server)</button>
+          <button type="button" data-source="spotify">Spotify</button>
+        </div>
+      </div>
+      <div class="plex-only">
+        <label class="lbl">Musikkbibliotek (Plex)</label>
+        <div id="plexStatus" class="warnbox"></div>
+        <div class="admin-only">
+          <label class="lbl" for="plexServerSel">Plex-server</label>
+          <div class="row">
+            <select id="plexServerSel" class="grow"></select>
+            <button class="btn" id="plexReconnect" type="button">Koble til på nytt</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="plexLoginBtn" type="button">Koble til Plex</button>
+            <button class="btn danger" id="plexLogoutBtn" type="button" hidden>Koble fra Plex på denne enheten</button>
+          </div>
+          <div class="hint">Logg inn med en Plex-konto som har tilgang til musikkbiblioteket. Tilkoblingen lagres bare på denne enheten – deretter kan alle bruke KampDJ her uten å logge inn. Tips: bruk en egen Plex-konto for klubben som bare har tilgang til musikkbiblioteket.</div>
+        </div>
+      </div>
+      <div class="admin-only spotify-only">
       <label class="lbl" for="redirectUri">Redirect URI (lim inn i Spotify Developer Dashboard)</label>
       <div class="uri-box">
         <code id="redirectUri"></code>
@@ -531,14 +572,16 @@
       <div id="accountBox" class="okbox" hidden></div>
       </div>
 
+      <div class="spotify-only">
       <label class="lbl" for="outSel">Avspillingsenhet (hvor musikken spilles)</label>
       <div class="row">
         <select id="outSel" class="grow"></select>
         <button class="btn" id="outRefresh" type="button">Oppdater</button>
       </div>
       <div class="hint" id="outHint"></div>
+      </div>
 
-      <div class="admin-only">
+      <div class="admin-only spotify-only">
       <h3>Slik setter du opp (én gang)</h3>
       <ol class="steps">
         <li>Gå til <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> og trykk <b>Create app</b>.</li>
@@ -646,12 +689,31 @@
         <div class="seg" id="adminTabs" role="group" aria-label="Velg kategori å redigere"></div>
       </div>
 
+      <div class="spotify-only">
       <h3>Importer spilleliste</h3>
       <div class="row">
         <input class="grow" id="plLink" type="text" spellcheck="false" placeholder="https://open.spotify.com/playlist/…  eller  spotify:playlist:…">
         <button class="btn primary" id="plBtn" type="button">Hent sanger</button>
       </div>
       <div class="hint" id="plHint"></div>
+      </div>
+
+      <div class="plex-only">
+        <h3>Hent spilleliste fra Plex</h3>
+        <div class="row">
+          <select id="plexPlSel" class="grow" aria-label="Plex-spilleliste"></select>
+          <button class="btn primary" id="plexPlBtn" type="button">Hent sanger</button>
+          <button class="btn" id="plexPlRefresh" type="button">Oppdater</button>
+        </div>
+        <div class="hint" id="plexPlHint"></div>
+        <h3>Kampklar</h3>
+        <div class="row">
+          <button class="btn primary" id="prepBtn" type="button">Gjør klar til kamp</button>
+          <button class="btn" id="autoDropBtn" type="button">Foreslå dropp automatisk</button>
+        </div>
+        <div class="hint" id="prepHint"></div>
+        <div class="hint">«Gjør klar til kamp» lagrer sangene på denne enheten, så musikken virker selv om nettet i hallen faller ut. «Foreslå dropp» analyserer lyden og setter starttid for sangene i valgt kategori som står på 0:00.</div>
+      </div>
 
       <div class="section">
         <h3>Dropp-finner</h3>
@@ -675,7 +737,7 @@
       <form id="trackForm" autocomplete="off" novalidate class="section">
         <h3 id="formTitle">Legg til enkeltsang</h3>
         <div class="form-grid">
-          <div class="f-link">
+          <div class="f-link spotify-only">
             <label class="lbl" for="fLink">Spotify-lenke eller URI</label>
             <input id="fLink" type="text" spellcheck="false" placeholder="https://open.spotify.com/track/…  eller  spotify:track:…">
             <div class="hint" id="linkHint"></div>
@@ -720,7 +782,7 @@
         <button class="btn" id="importBtn" type="button">Importer JSON</button>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
         <button class="btn danger" id="clearCatBtn" type="button">Tøm kategorien</button>
-        <button class="btn ghost" id="defaultsBtn" type="button">Tilbakestill MÅL til eksempellåter</button>
+        <button class="btn ghost spotify-only" id="defaultsBtn" type="button">Tilbakestill MÅL til eksempellåter</button>
       </div>
     </div>
   </details>
@@ -747,6 +809,7 @@
         <button class="btn" type="button" data-seek="5000">+5 s</button>
       </div>
       <button id="fnMark" type="button">DROPP NÅ<span class="sub">D · LAGRER OG GÅR TIL NESTE</span></button>
+      <button class="btn" type="button" id="fnAccept" hidden>Bruk forslaget (A)</button>
       <div class="fn-last" id="fnLast"></div>
       <div class="fn-nav">
         <button class="btn" type="button" id="fnPrev">Forrige (B)</button>
@@ -754,6 +817,78 @@
         <button class="btn" type="button" id="fnSkip">Hopp over (N)</button>
       </div>
       <div class="hint" style="text-align:center"><kbd>Space</kbd> pause/spill · <kbd>←</kbd>/<kbd>→</kbd> ±5 s · <kbd>Shift</kbd>+pil ±1 s · <kbd>D</kbd> dropp · <kbd>R</kbd> hør lagret · <kbd>B</kbd>/<kbd>N</kbd> forrige/neste</div>
+    </div>
+  </div>
+
+  <!-- ===== Brukervilkår og personvern (må godkjennes) ===== -->
+  <div class="overlay" id="consent" hidden role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+    <div class="finder legal">
+      <div>
+        <p class="eyebrow" style="margin:0 0 8px">Før du starter</p>
+        <h2 id="consentTitle" class="legal-h">Brukervilkår og personvern</h2>
+        <p class="muted small" style="margin:6px 0 0">Les gjennom og godta for å bruke KampDJ. Du kan lese dem igjen når som helst nederst på siden.</p>
+      </div>
+      <div class="seg" role="tablist" aria-label="Dokument" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <button type="button" role="tab" id="tabTerms" aria-pressed="true" aria-controls="docTerms">Brukervilkår</button>
+        <button type="button" role="tab" id="tabPrivacy" aria-pressed="false" aria-controls="docPrivacy">Personvernerklæring</button>
+      </div>
+      <div class="legal-doc" id="docTerms" role="tabpanel" tabindex="0">
+        <p class="muted small">Versjon <span class="terms-version"></span></p>
+        <h4>1. Om tjenesten</h4>
+        <p>KampDJ er en nettbasert app for avspilling av kampmusikk (mål, timeout og pause) på idrettsarrangementer. Tjenesten tilbys av <span class="owner-name"></span> gratis og «som den er».</p>
+        <h4>2. Bruk av tjenesten</h4>
+        <p>KampDJ skal brukes til avspilling av musikk på arrangementer i regi av klubben eller laget. Du skal ikke forsøke å omgå tilgangskontroll, belaste tjenestene appen kobler seg til unødig, eller bruke appen til å spre musikk eller innloggingsdata videre til andre.</p>
+        <h4>3. Musikk og rettigheter</h4>
+        <p>KampDJ leverer ikke musikk selv. Den som bruker appen og arrangøren er selv ansvarlige for at musikken er lovlig anskaffet, og for at nødvendige lisenser for offentlig fremføring er på plass (for eksempel fra TONO og Gramo).</p>
+        <h4>4. Tjenester fra andre</h4>
+        <p>Appen kan kobles til Spotify og Plex. Da gjelder også deres vilkår. Spotify krever blant annet Premium for avspilling. KampDJ er ikke laget, støttet eller godkjent av Spotify eller Plex.</p>
+        <h4>5. Lydnivå og sikkerhet</h4>
+        <p>Den som styrer musikken har ansvar for et forsvarlig lydnivå, særlig når barn og unge er til stede.</p>
+        <h4>6. Ansvar</h4>
+        <p>Vi gjør vårt beste for at appen fungerer, men gir ingen garanti for drift eller tilgjengelighet. <span class="owner-name"></span> er ikke ansvarlig for tap eller ulemper som følge av feil, avbrudd eller bruk av appen, så langt loven tillater det.</p>
+        <h4>7. Endringer</h4>
+        <p>Vilkårene kan endres. Ved vesentlige endringer blir du bedt om å godta dem på nytt.</p>
+        <h4>8. Kontakt og lovvalg</h4>
+        <p>Spørsmål rettes til <a class="owner-email-link" href="#"><span class="owner-email"></span></a>. Norsk rett gjelder.</p>
+      </div>
+      <div class="legal-doc" id="docPrivacy" role="tabpanel" tabindex="0" hidden>
+        <p class="muted small">Versjon <span class="terms-version"></span></p>
+        <h4>1. Behandlingsansvarlig</h4>
+        <p><span class="owner-name"></span> er behandlingsansvarlig for KampDJ. Kontakt: <a class="owner-email-link" href="#"><span class="owner-email"></span></a>.</p>
+        <h4>2. Kort fortalt</h4>
+        <p>KampDJ har ingen egen server og ingen brukerkontoer hos oss. Vi samler ikke inn personopplysninger, og vi bruker ikke sporing, analyse eller reklame.</p>
+        <h4>3. Hva som lagres på enheten din</h4>
+        <p>Appen lagrer følgende lokalt i nettleseren på enheten du bruker (localStorage og nettleserens lagringsplass for filer). Det sendes ikke til oss:</p>
+        <ul>
+          <li>sanglister, starttider, innstillinger og hvilke sanger som er spilt i runden</li>
+          <li>innloggingsnøkler for Spotify eller Plex, hvis du kobler til dem</li>
+          <li>lydfiler som lagres med «Gjør klar til kamp»</li>
+          <li>tidspunktet du godtok vilkårene</li>
+        </ul>
+        <h4>4. Tjenester appen bruker</h4>
+        <ul>
+          <li><b>GitHub Pages</b> leverer nettsiden. GitHub mottar IP-adressen din og tekniske opplysninger når siden lastes.</li>
+          <li><b>Google Fonts</b> leverer skrifttypene. Google mottar IP-adressen din når skriftene lastes.</li>
+          <li><b>Plex</b> (plex.tv og klubbens Plex-server) brukes for å hente og spille musikken når Plex er valgt som lydkilde.</li>
+          <li><b>Spotify</b> brukes bare hvis du logger inn med Spotify. Da gjelder Spotifys personvernerklæring.</li>
+        </ul>
+        <h4>5. Grunnlag og lagringstid</h4>
+        <p>Opplysningene på enheten er nødvendige for at appen skal fungere slik du ber om (personvernforordningen artikkel 6 nr. 1 bokstav b og f). De ligger der til du sletter dem, for eksempel med knappen nedenfor eller ved å tømme nettleserdata.</p>
+        <h4>6. Barn</h4>
+        <p>KampDJ er laget for voksne ledere og funksjonærer. Appen behandler ikke opplysninger om spillere eller utøvere.</p>
+        <h4>7. Dine rettigheter</h4>
+        <p>Du kan be om innsyn, retting og sletting, og du kan klage til <a href="https://www.datatilsynet.no" target="_blank" rel="noopener">Datatilsynet</a>. Siden dataene bare ligger på din enhet, kan du selv slette alt:</p>
+        <p><button class="btn danger sm" type="button" id="wipeBtn">Slett alle KampDJ-data på denne enheten</button></p>
+        <h4>8. Endringer</h4>
+        <p>Ved vesentlige endringer blir du bedt om å godta erklæringen på nytt.</p>
+      </div>
+      <div id="consentActions">
+        <label class="chk" style="margin-top:0"><input type="checkbox" id="consentChk"> Jeg har lest og godtar brukervilkårene og personvernerklæringen</label>
+        <button class="btn primary" id="consentBtn" type="button" disabled style="width:100%;margin-top:12px">Godta og fortsett</button>
+      </div>
+      <div id="docCloseRow" hidden>
+        <button class="btn" id="docCloseBtn" type="button" style="width:100%">Lukk</button>
+      </div>
     </div>
   </div>
 
@@ -765,6 +900,7 @@
     <span><kbd>Esc</kbd> Nødstopp</span>
     <span>Snarveier er av mens du skriver i tekstfelt (Esc virker alltid).</span>
   </footer>
+  <p class="legal-links"><a href="#" id="openTerms">Brukervilkår</a><span aria-hidden="true">·</span><a href="#" id="openPrivacy">Personvernerklæring</a></p>
 </div>
 
 <script>
@@ -783,6 +919,16 @@
   // Valgfritt ekstra filter: Spotify-brukernavn eller e-poster som får bruke appen (tom = alle kontoer
   // som er lagt til under «User Management» i Spotify Dashboard).
   const ALLOWED_USERS = [];
+  // Lydkilde som standard: 'plex' (egen Plex-server) eller 'spotify'. Kan endres per enhet under #admin.
+  const DEFAULT_SOURCE = 'plex';
+  // Valgfritt: Plex-token for en EGEN, begrenset Plex-konto (aldri din egen hovedkonto!) som bare har tilgang til
+  // musikkbiblioteket. Når den er satt, er musikken tilgjengelig på alle enheter uten innlogging.
+  // NB: Verdien blir offentlig synlig i nettsiden.
+  const PLEX_SHARED_TOKEN = '';
+  // Brukervilkår og personvern
+  const OWNER_NAME = '[KLUBBENS NAVN]';
+  const OWNER_EMAIL = '[KONTAKT-E-POST]';
+  const TERMS_VERSION = '2026-11-23';
   const FADE_MS = 1500;
   const FADE_STEPS = 15;
   const LS = {
@@ -793,6 +939,10 @@
     volume: 'soundboard.volume',
     settings: 'soundboard.settings',
     output: 'soundboard.output',
+    source: 'soundboard.source',
+    plex: 'soundboard.plex',
+    plexPin: 'soundboard.plexPin',
+    consent: 'soundboard.consent',
     verifier: 'soundboard.pkceVerifier',
     state: 'soundboard.pkceState'
   };
@@ -899,6 +1049,8 @@
   /* =====================================================================
    * Tilstand
    * ===================================================================== */
+  let source = (() => { const v = store.get(LS.source, null); return v === 'plex' || v === 'spotify' ? v : DEFAULT_SOURCE; })();
+  const usePlex = () => source === 'plex';
   let tracks = loadTracks();
   let played = loadPlayed();
   let settings = loadSettings();
@@ -943,6 +1095,22 @@
 
   function normalizeTrack(o, defaultCat = 'mal') {
     if (!o || typeof o !== 'object') return null;
+    if (o.source === 'plex') {
+      if (!o.plexKey || typeof o.partKey !== 'string' || !o.partKey.startsWith('/library/')) return null;
+      const d = Number(o.dropMs);
+      return {
+        id: (typeof o.id === 'string' && o.id.trim()) ? o.id.trim().slice(0, 64) : newId(),
+        kategori: CAT_KEYS.includes(o.kategori) ? o.kategori : defaultCat,
+        tittel: String(o.tittel ?? o.title ?? 'Ukjent tittel').slice(0, 200),
+        artist: String(o.artist ?? '').slice(0, 200),
+        source: 'plex',
+        plexKey: String(o.plexKey).slice(0, 40),
+        partKey: o.partKey.slice(0, 300),
+        durationMs: Number(o.durationMs) || 0,
+        thumb: typeof o.thumb === 'string' ? o.thumb.slice(0, 300) : '',
+        dropMs: Number.isFinite(d) && d >= 0 ? Math.round(d) : 0
+      };
+    }
     const tid = parseTrackId(o.spotifyUri || o.uri || o.url || o.link || o.trackId || '');
     if (!tid) return null;
     let dropMs = Number(o.dropMs);
@@ -995,7 +1163,7 @@
   function saveTracks() { store.set(LS.tracks, tracks); }
   function savePlayed() { store.set(LS.played, played); }
   function saveSettings() { store.set(LS.settings, settings); }
-  const tracksIn = (cat) => tracks.filter((t) => t.kategori === cat);
+  const tracksIn = (cat) => tracks.filter((t) => t.kategori === cat && (t.source || 'spotify') === source);
   const effectiveVolume = () => (masterVolume / 100) * volFactor;
 
   /* =====================================================================
@@ -1297,6 +1465,12 @@
 
   /** Stille helsesjekk: oppdager en «død» spiller før noen trykker MÅL!. */
   async function healthCheck() {
+    if (usePlex()) {
+      if (plexToken() && document.visibilityState === 'visible' && !busy && !(local.el && !local.el.paused)) {
+        if (!plexReady() || !(await plexPing(plex.server.base, plex.server.token))) await plexConnect(true);
+      }
+      return;
+    }
     if (isRemote()) {
       if (tokens && document.visibilityState === 'visible' && !busy) await refreshDevices(true);
       return;
@@ -1326,6 +1500,7 @@
   /** Volum 0–1 på aktiv enhet. */
   async function outSetVolume(v) {
     v = Math.max(0, Math.min(1, v));
+    if (usePlex()) { localSetVolume(v); return; }
     if (!isRemote()) { if (player) await player.setVolume(v); return; }
     if (remoteVolUnsupported || !output.deviceId) return;
     try {
@@ -1340,16 +1515,19 @@
     }
   }
   async function outGetVolume() {
+    if (usePlex()) return localGetVolume();
     if (!isRemote()) return player ? player.getVolume() : effectiveVolume();
     return lastRemoteVolume ?? effectiveVolume();
   }
   async function outPause() {
+    if (usePlex()) { localStop(); return; }
     if (!isRemote()) { if (player) await player.pause(); return; }
     try { await api('PUT', '/me/player/pause?device_id=' + enc(output.deviceId)); }
     catch (e) { if (e.status !== 403) throw e; } // 403 = allerede pauset
     if (liveState) { liveState.position = currentPos(); liveState.paused = true; liveState.stamp = performance.now(); }
   }
   async function outResume() {
+    if (usePlex()) { if (local.el && local.el.getAttribute('src')) await local.el.play(); return; }
     if (!isRemote()) { if (player) await player.resume(); return; }
     try { await api('PUT', '/me/player/play?device_id=' + enc(output.deviceId)); }
     catch (e) { if (e.status !== 403) throw e; }
@@ -1357,11 +1535,13 @@
   }
   async function outSeek(ms) {
     ms = Math.max(0, Math.round(ms));
+    if (usePlex()) { if (local.el) local.el.currentTime = ms / 1000; return; }
     if (!isRemote()) { if (player) await player.seek(ms); return; }
     await api('PUT', `/me/player/seek?position_ms=${ms}&device_id=${enc(output.deviceId)}`);
     if (liveState) { liveState.position = ms; liveState.stamp = performance.now(); updateProgress(); }
   }
   async function outToggle() {
+    if (usePlex()) { const el = local.el; if (!el || !el.getAttribute('src')) return; if (el.paused) await el.play(); else el.pause(); return; }
     if (!isRemote()) { if (player) await player.togglePlay(); return; }
     if (liveState && !liveState.paused) await outPause(); else await outResume();
   }
@@ -1372,6 +1552,11 @@
   }
   /** Fersk avspillingsstatus: { position, duration, uri, linkedUri } eller null. */
   async function outGetState() {
+    if (usePlex()) {
+      const el = local.el;
+      if (!el || !local.track || !el.getAttribute('src')) return null;
+      return { position: el.currentTime * 1000, duration: (el.duration || 0) * 1000, uri: trackUri(local.track) };
+    }
     if (!isRemote()) {
       if (!player) return null;
       const st = await player.getCurrentState();
@@ -1595,6 +1780,516 @@
   }
 
   /* =====================================================================
+   * Plex (egen medieserver) – avspilling i nettleseren
+   * ===================================================================== */
+  let plex = (() => { const p = store.get(LS.plex, null); return p && typeof p === 'object' ? p : {}; })();
+  let plexServers = [];
+  let plexPlaylists = [];
+  const savePlex = () => store.set(LS.plex, plex);
+  const plexToken = () => plex.token || PLEX_SHARED_TOKEN || '';
+  const plexReady = () => !!(plex.server && plex.server.base && plex.server.token);
+  const trackUri = (t) => (t && t.source === 'plex' ? 'plex:' + t.plexKey : t && t.spotifyUri);
+
+  function plexClientId() {
+    if (!plex.clientId) { plex.clientId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : randomString(32); savePlex(); }
+    return plex.clientId;
+  }
+  function plexQuery(extra) {
+    const q = new URLSearchParams({
+      'X-Plex-Product': 'KampDJ', 'X-Plex-Version': '2.0', 'X-Plex-Client-Identifier': plexClientId(),
+      'X-Plex-Platform': 'Web', 'X-Plex-Device-Name': 'KampDJ'
+    });
+    Object.entries(extra || {}).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, String(v)); });
+    return q.toString();
+  }
+  async function fetchT(url, opts = {}, ms = 8000) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), ms);
+    try { return await fetch(url, { ...opts, signal: ac.signal }); } finally { clearTimeout(timer); }
+  }
+  async function plexTv(method, path, token, extra) {
+    let res;
+    const url = `https://plex.tv/api/v2${path}${path.includes('?') ? '&' : '?'}${plexQuery({ 'X-Plex-Token': token, ...extra })}`;
+    try { res = await fetchT(url, { method, headers: { Accept: 'application/json' } }); }
+    catch { const e = new Error('Ingen kontakt med plex.tv.'); e.status = 0; throw e; }
+    if (!res.ok) { const e = new Error('Plex svarte ' + res.status); e.status = res.status; throw e; }
+    const txt = await res.text();
+    try { return txt ? JSON.parse(txt) : null; } catch { return null; }
+  }
+
+  async function plexLogin() {
+    try {
+      const pin = await plexTv('POST', '/pins', null, { strong: 'true' });
+      store.set(LS.plexPin, { id: pin.id, code: pin.code, at: Date.now() });
+      const params = new URLSearchParams({
+        clientID: plexClientId(), code: pin.code, forwardUrl: REDIRECT_URI + '#admin',
+        'context[device][product]': 'KampDJ'
+      });
+      window.location.assign('https://app.plex.tv/auth#?' + params.toString());
+    } catch (e) {
+      notify('Kunne ikke starte Plex-innlogging: ' + e.message, 'error', { key: 'plex' });
+    }
+  }
+  async function plexHandleReturn() {
+    const pin = store.get(LS.plexPin, null);
+    if (!pin) return;
+    store.del(LS.plexPin);
+    if (Date.now() - (pin.at || 0) > 30 * 60 * 1000) return;
+    try {
+      const r = await plexTv('GET', '/pins/' + encodeURIComponent(pin.id), null, { code: pin.code });
+      if (r && r.authToken) {
+        plex.token = r.authToken; plex.server = null; plex.user = null; savePlex();
+        notify('Plex er koblet til denne enheten.', 'success', { key: 'plex' });
+      } else {
+        notify('Plex-innloggingen ble ikke fullført. Prøv «Koble til Plex» igjen.', 'warn', { key: 'plex' });
+      }
+    } catch (e) {
+      notify('Plex-innlogging feilet: ' + e.message, 'error', { key: 'plex' });
+    }
+  }
+  function plexDisconnect() {
+    plex = { clientId: plex.clientId };
+    savePlex();
+    plexServers = []; plexPlaylists = [];
+    localStop();
+    setStatus('off', 'Plex ikke tilkoblet');
+    renderPlex();
+  }
+
+  async function plexPing(base, token) {
+    try {
+      const res = await fetchT(`${base}/identity?${new URLSearchParams({ 'X-Plex-Token': token })}`, { headers: { Accept: 'application/json' } }, 4500);
+      return res.ok;
+    } catch { return false; }
+  }
+  async function plexPickConnection(resource) {
+    const token = resource.accessToken || plexToken();
+    const conns = (resource.connections || []).filter((c) => c && c.uri && (c.protocol === 'https' || String(c.uri).startsWith('https://')));
+    const direct = conns.filter((c) => !c.relay);
+    const relay = conns.filter((c) => c.relay);
+    for (const group of [direct, relay]) {
+      if (!group.length) continue;
+      try {
+        return await Promise.any(group.map(async (c) => { if (await plexPing(c.uri, token)) return c; throw new Error('nei'); }));
+      } catch { /* prøv neste gruppe */ }
+    }
+    return null;
+  }
+  async function plexLoadServers() {
+    const res = await plexTv('GET', '/resources', plexToken(), { includeHttps: '1', includeRelay: '1' });
+    plexServers = (Array.isArray(res) ? res : []).filter((r) => String(r.provides || '').split(',').includes('server'));
+    return plexServers;
+  }
+
+  /** Kobler til Plex-serveren (lagret forbindelse først, ellers via plex.tv). */
+  let plexConnecting = null;
+  function plexConnect(quiet, forceServerId) {
+    if (plexConnecting) return plexConnecting;
+    plexConnecting = (async () => {
+      if (!plexToken()) { setStatus('off', 'Musikkbibliotek ikke koblet til'); renderPlex(); return false; }
+      setStatus('wait', 'Kobler til Plex …');
+      try {
+        if (!plex.user && plex.token) {
+          try { const u = await plexTv('GET', '/user', plexToken()); plex.user = u ? { username: u.username || u.title || '', email: u.email || '' } : null; savePlex(); } catch { /* valgfritt */ }
+        }
+        const keep = plex.server && plex.server.base && (!forceServerId || forceServerId === plex.server.id);
+        if (!(keep && await plexPing(plex.server.base, plex.server.token))) {
+          const servers = await plexLoadServers();
+          if (!servers.length) {
+            setStatus('off', 'Ingen Plex-server');
+            if (!quiet) notify('Plex-kontoen har ikke tilgang til noen Plex-server. Del musikkbiblioteket med kontoen (Plex → Innstillinger → Administrer bibliotekstilgang).', 'error', { key: 'plex' });
+            renderPlex();
+            return false;
+          }
+          const wanted = forceServerId || (plex.server && plex.server.id);
+          const chosen = servers.find((s) => s.clientIdentifier === wanted) || servers.find((s) => s.owned) || servers[0];
+          const conn = await plexPickConnection(chosen);
+          if (!conn) {
+            setStatus('off', 'Plex-serveren svarer ikke');
+            if (!quiet) notify(`Plex-serveren «${chosen.name}» svarer ikke. Sjekk at PC-en med Plex er på, og at Fjerntilgang er aktiv i Plex.`, 'error', { key: 'plex' });
+            renderPlex();
+            return false;
+          }
+          plex.server = { id: chosen.clientIdentifier, name: chosen.name, token: chosen.accessToken || plexToken(), base: conn.uri, relay: !!conn.relay, local: !!conn.local };
+          savePlex();
+        }
+        setStatus('on', `Plex · ${plex.server.name}`);
+        clearNotice('plex');
+        renderPlex();
+        loadPlexPlaylists(true);
+        updatePrepHint();
+        return true;
+      } catch (e) {
+        setStatus('off', 'Plex utilgjengelig');
+        if (!quiet) notify('Kunne ikke koble til Plex: ' + e.message, 'error', { key: 'plex' });
+        renderPlex();
+        return false;
+      }
+    })();
+    plexConnecting.finally(() => { plexConnecting = null; }).catch(() => {});
+    return plexConnecting;
+  }
+
+  async function plexServer(path, retried) {
+    if (!plexReady()) { const e = new Error('Plex er ikke tilkoblet'); e.status = 0; throw e; }
+    const url = `${plex.server.base}${path}${path.includes('?') ? '&' : '?'}${new URLSearchParams({ 'X-Plex-Token': plex.server.token })}`;
+    let res;
+    try { res = await fetchT(url, { headers: { Accept: 'application/json' } }, 10000); }
+    catch {
+      if (!retried && await plexConnect(true)) return plexServer(path, true);
+      const e = new Error('Plex-serveren svarer ikke'); e.status = 0; throw e;
+    }
+    if (!res.ok) { const e = new Error('Plex-serveren svarte ' + res.status); e.status = res.status; throw e; }
+    return res.json();
+  }
+  async function loadPlexPlaylists(quiet) {
+    try {
+      const data = await plexServer('/playlists?playlistType=audio');
+      plexPlaylists = ((data && data.MediaContainer && data.MediaContainer.Metadata) || [])
+        .map((p) => ({ key: String(p.ratingKey), title: p.title || 'Uten navn', count: p.leafCount || 0 }));
+    } catch (e) {
+      if (!quiet) notify('Kunne ikke hente spillelister fra Plex: ' + e.message, 'error', { key: 'plex' });
+    }
+    renderPlex();
+    return plexPlaylists;
+  }
+  async function plexPlaylistTracks(key) {
+    const data = await plexServer(`/playlists/${encodeURIComponent(key)}/items`);
+    return ((data && data.MediaContainer && data.MediaContainer.Metadata) || []).map((m) => {
+      const part = m.Media && m.Media[0] && m.Media[0].Part && m.Media[0].Part[0];
+      if (!part || !part.key || !String(part.key).startsWith('/library/')) return null;
+      return {
+        tittel: m.title || 'Ukjent tittel',
+        artist: m.originalTitle || m.grandparentTitle || '',
+        source: 'plex',
+        plexKey: String(m.ratingKey),
+        partKey: String(part.key),
+        durationMs: Number(m.duration) || 0,
+        thumb: m.parentThumb || m.thumb || m.grandparentThumb || '',
+        dropMs: 0
+      };
+    }).filter(Boolean);
+  }
+  function plexStreamUrl(t) {
+    return `${plex.server.base}${t.partKey}?${new URLSearchParams({ 'X-Plex-Token': plex.server.token })}`;
+  }
+  function plexThumbUrl(t) {
+    if (!t || !t.thumb || !plexReady()) return null;
+    return `${plex.server.base}/photo/:/transcode?${new URLSearchParams({ width: '240', height: '240', minSize: '1', upscale: '1', url: t.thumb, 'X-Plex-Token': plex.server.token })}`;
+  }
+
+  async function importPlexPlaylist() {
+    const key = $('plexPlSel').value;
+    if (!key) { notify('Velg en Plex-spilleliste først.', 'warn', { key: 'playlist' }); return; }
+    const cat = adminCat;
+    const btn = $('plexPlBtn');
+    btn.disabled = true; btn.textContent = 'Henter …';
+    try {
+      const list = await plexPlaylistTracks(key);
+      const existing = new Set(tracksIn(cat).map((t) => t.plexKey));
+      let added = 0, dupes = 0;
+      list.forEach((t) => {
+        if (existing.has(t.plexKey)) { dupes++; return; }
+        existing.add(t.plexKey);
+        tracks.push({ id: newId(), kategori: cat, ...t });
+        added++;
+      });
+      saveTracks();
+      renderAll();
+      updatePrepHint();
+      const pl = plexPlaylists.find((p) => p.key === key);
+      notify(`La til ${added} sanger fra «${pl ? pl.title : 'spillelisten'}» i «${CATS[cat].navn}»${dupes ? ` (${dupes} fantes fra før)` : ''}.`, added ? 'success' : 'info', { key: 'playlist', timeout: 7000 });
+    } catch (e) {
+      notify('Kunne ikke hente spillelisten: ' + e.message, 'error', { key: 'playlist' });
+    } finally {
+      btn.disabled = false; btn.textContent = 'Hent sanger';
+    }
+  }
+
+  function renderPlex() {
+    if (!$('plexStatus')) return;
+    const st = $('plexStatus');
+    if (plexReady()) {
+      const how = plex.server.relay ? 'via Plex-relé (tregere)' : plex.server.local ? 'lokalt nettverk' : 'fjerntilgang';
+      st.className = 'okbox';
+      st.textContent = `Tilkoblet «${plex.server.name}» (${how})${plex.user && plex.user.username ? ' · konto: ' + plex.user.username : PLEX_SHARED_TOKEN && !plex.token ? ' · delt klubbtilgang' : ''}.`;
+    } else if (plexToken()) {
+      st.className = 'warnbox';
+      st.textContent = 'Plex er koblet til denne enheten, men serveren svarer ikke akkurat nå. Sjekk at PC-en med Plex er på.';
+    } else {
+      st.className = 'warnbox';
+      st.textContent = 'Musikkbiblioteket er ikke koblet til på denne enheten ennå. Administrator: åpne kampdj.no/#admin og trykk «Koble til Plex».';
+    }
+    st.style.marginTop = '0';
+    $('plexLoginBtn').hidden = !!plex.token;
+    $('plexLogoutBtn').hidden = !plex.token;
+    // Serverliste
+    const sel = $('plexServerSel');
+    sel.textContent = '';
+    const list = plexServers.length ? plexServers : (plex.server ? [{ clientIdentifier: plex.server.id, name: plex.server.name }] : []);
+    list.forEach((s) => { const o = document.createElement('option'); o.value = s.clientIdentifier; o.textContent = s.name + (s.owned ? ' (din)' : ''); sel.appendChild(o); });
+    if (!list.length) { const o = document.createElement('option'); o.value = ''; o.textContent = '— ingen server —'; sel.appendChild(o); }
+    sel.value = plex.server ? plex.server.id : '';
+    // Spillelister
+    const ps = $('plexPlSel');
+    const prev = ps.value;
+    ps.textContent = '';
+    if (!plexPlaylists.length) { const o = document.createElement('option'); o.value = ''; o.textContent = plexReady() ? '— ingen lydspillelister funnet —' : '— koble til Plex først —'; ps.appendChild(o); }
+    plexPlaylists.forEach((p) => { const o = document.createElement('option'); o.value = p.key; o.textContent = `${p.title} (${p.count})`; ps.appendChild(o); });
+    if (prev && plexPlaylists.some((p) => p.key === prev)) ps.value = prev;
+    $('plexPlBtn').disabled = !plexPlaylists.length;
+    $('plexPlHint').textContent = `Sangene legges i «${CATS[adminCat].navn}» (velg kategori over). Duplikater hoppes over.`;
+  }
+
+  /* ---------- Lydmotor (HTML Audio + Web Audio for volum/fade, også på iPad) ---------- */
+  const local = { ctx: null, el: null, gain: null, wa: false, unlocked: false, track: null, urls: new Map() };
+
+  function localEl() {
+    if (local.el) return local.el;
+    const el = document.createElement('audio');
+    el.preload = 'auto';
+    el.crossOrigin = 'anonymous';
+    el.setAttribute('playsinline', '');
+    ['play', 'pause', 'ended', 'loadedmetadata', 'seeked'].forEach((ev) => el.addEventListener(ev, () => onLocalState(true)));
+    el.addEventListener('timeupdate', () => onLocalState(false));
+    el.addEventListener('error', () => {
+      if (local.track && el.getAttribute('src')) notify('Kunne ikke spille lydfilen fra Plex. Sjekk at Plex-serveren er på og tilgjengelig.', 'error', { key: 'play' });
+    });
+    local.el = el;
+    return el;
+  }
+  function silentWavUrl() {
+    const n = 2205, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 22050, true); v.setUint32(28, 44100, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+  /** Kalles direkte i et klikk/tastetrykk: låser opp lyd (viktig på iPad). */
+  function localUnlock() {
+    const el = localEl();
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!local.ctx && AC) local.ctx = new AC();
+      if (local.ctx && local.ctx.state !== 'running') local.ctx.resume().catch(() => {});
+      if (local.ctx && !local.gain) {
+        const src = local.ctx.createMediaElementSource(el);
+        local.gain = local.ctx.createGain();
+        src.connect(local.gain);
+        local.gain.connect(local.ctx.destination);
+        local.wa = true;
+      }
+    } catch { local.wa = false; }
+    if (!local.unlocked && !el.getAttribute('src')) {
+      local.unlocked = true;
+      el.src = silentWavUrl();
+      el.play().then(() => el.pause()).catch(() => {});
+    }
+  }
+  function localSetVolume(v) {
+    v = Math.max(0, Math.min(1, v));
+    if (local.wa && local.gain) local.gain.gain.value = v;
+    else if (local.el) { try { local.el.volume = v; } catch { /* iOS: skrivebeskyttet */ } }
+  }
+  function localGetVolume() {
+    if (local.wa && local.gain) return local.gain.gain.value;
+    return local.el ? local.el.volume : effectiveVolume();
+  }
+  function localStop() { if (local.el) { try { local.el.pause(); } catch { /* ignorer */ } } }
+
+  function onLocalState(full) {
+    const el = local.el, t = local.track;
+    if (!el || !t) return;
+    const dur = Number.isFinite(el.duration) && el.duration > 0 ? el.duration * 1000 : (t.durationMs || 0);
+    liveState = {
+      paused: el.paused, position: el.currentTime * 1000, duration: dur, stamp: performance.now(),
+      uri: trackUri(t), name: t.tittel, artists: t.artist,
+      image: plexThumbUrl(t)
+    };
+    if (full) renderNowPlaying(); else updateProgress();
+  }
+
+  async function playLocal(track, mode) {
+    if (!plexReady()) {
+      const ok = plexToken() ? await plexConnect(false) : false;
+      if (!ok) {
+        notify('Musikkbiblioteket (Plex) er ikke tilkoblet på denne enheten. Administrator må koble det til via kampdj.no/#admin.', 'error', { key: 'play' });
+        openSetup();
+        return false;
+      }
+    }
+    cancelFade();
+    volFactor = (settings.vol[track.kategori] ?? 100) / 100;
+    const el = localEl();
+    localUnlock();
+    let url = null;
+    try { url = await audioCacheUrl(track); } catch { url = null; }
+    if (!url) url = plexStreamUrl(track);
+    local.track = track;
+    localSetVolume(effectiveVolume());
+    const startSec = Math.max(0, (track.dropMs || 0) / 1000);
+    try {
+      el.src = url + '#t=' + startSec.toFixed(2);
+      const seekIfNeeded = () => { if (Math.abs(el.currentTime - startSec) > 0.4) { try { el.currentTime = startSec; } catch { /* ignorer */ } } };
+      el.addEventListener('loadedmetadata', seekIfNeeded, { once: true });
+      await el.play();
+      seekIfNeeded();
+    } catch (e) {
+      const msg = e && e.name === 'NotAllowedError'
+        ? 'Nettleseren blokkerte lyden. Trykk én gang på skjermen og prøv igjen.'
+        : 'Kunne ikke spille sangen fra Plex. Sjekk at Plex-serveren er på, eller trykk «Gjør klar til kamp» for å lagre sangene på enheten.';
+      notify(msg, 'error', { key: 'play' });
+      return false;
+    }
+    clearNotice('play');
+    nowPlaying = { track, mode, at: Date.now() };
+    onLocalState(true);
+    return true;
+  }
+
+  /* ---------- Kampklar: lagre lydfiler på enheten (Cache Storage) ---------- */
+  const AUDIO_CACHE = 'kampdj-audio-v1';
+  const cacheKey = (t) => `https://kampdj.cache/plex/${encodeURIComponent((plex.server && plex.server.id) || 'server')}/${encodeURIComponent(t.plexKey)}`;
+  async function audioCacheUrl(t) {
+    if (!('caches' in window)) return null;
+    const memo = local.urls.get(t.plexKey);
+    if (memo) return memo;
+    const c = await caches.open(AUDIO_CACHE);
+    const r = await c.match(cacheKey(t));
+    if (!r) return null;
+    const u = URL.createObjectURL(await r.blob());
+    local.urls.set(t.plexKey, u);
+    return u;
+  }
+  async function audioArrayBuffer(t) {
+    if ('caches' in window) {
+      const c = await caches.open(AUDIO_CACHE);
+      const r = await c.match(cacheKey(t));
+      if (r) return r.arrayBuffer();
+    }
+    const res = await fetchT(plexStreamUrl(t), {}, 60000);
+    if (!res.ok) throw new Error('Plex svarte ' + res.status);
+    return res.arrayBuffer();
+  }
+  async function cachedKeys() {
+    if (!('caches' in window)) return new Set();
+    const c = await caches.open(AUDIO_CACHE);
+    return new Set((await c.keys()).map((r) => r.url));
+  }
+  async function updatePrepHint() {
+    const h = $('prepHint');
+    if (!h) return;
+    const list = tracks.filter((t) => t.source === 'plex');
+    if (!list.length) { h.textContent = 'Ingen Plex-sanger i listene ennå.'; return; }
+    if (!('caches' in window)) { h.textContent = 'Denne nettleseren kan ikke lagre lydfiler lokalt.'; return; }
+    const keys = await cachedKeys();
+    const n = list.filter((t) => keys.has(new Request(cacheKey(t)).url)).length;
+    let extra = '';
+    try { const est = await navigator.storage.estimate(); if (est && est.usage) extra = ` · bruker ca. ${Math.round(est.usage / 1e6)} MB`; } catch { /* ignorer */ }
+    h.textContent = `${n} av ${list.length} sanger lagret på denne enheten${extra}.` + (n < list.length ? ' Trykk «Gjør klar til kamp» før kampen.' : ' Klar for kamp – virker også uten nett.');
+    h.className = 'hint' + (n === list.length ? ' ok' : '');
+  }
+  let prepping = false;
+  async function prepareForMatch() {
+    if (prepping) return;
+    if (!plexReady() && !(await plexConnect(false))) return;
+    if (!('caches' in window)) { notify('Denne nettleseren kan ikke lagre lydfiler lokalt.', 'error', { key: 'prep' }); return; }
+    prepping = true;
+    const btn = $('prepBtn');
+    btn.disabled = true;
+    try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch { /* valgfritt */ }
+    const c = await caches.open(AUDIO_CACHE);
+    const keys = await cachedKeys();
+    const todo = tracks.filter((t) => t.source === 'plex' && !keys.has(new Request(cacheKey(t)).url));
+    let done = 0, failed = 0;
+    const worker = async () => {
+      while (todo.length) {
+        const t = todo.shift();
+        try {
+          const res = await fetchT(plexStreamUrl(t), {}, 120000);
+          if (!res.ok) throw new Error(String(res.status));
+          await c.put(cacheKey(t), res);
+          done++;
+        } catch { failed++; }
+        btn.textContent = `Lagrer … ${done + failed}`;
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    btn.disabled = false; btn.textContent = 'Gjør klar til kamp';
+    prepping = false;
+    updatePrepHint();
+    notify(failed ? `Lagret ${done} sanger, ${failed} feilet. Prøv igjen når Plex-serveren svarer.` : `Ferdig – ${done} nye sanger lagret på enheten.`, failed ? 'warn' : 'success', { key: 'prep', timeout: 8000 });
+  }
+
+  /* ---------- Automatisk dropp-forslag (analyse av lyden) ---------- */
+  const dropSuggestions = new Map();
+  async function suggestDrop(t) {
+    if (dropSuggestions.has(t.plexKey)) return dropSuggestions.get(t.plexKey);
+    const buf = await audioArrayBuffer(t);
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = local.ctx || new AC();
+    const audio = await new Promise((res, rej) => {
+      const p = ctx.decodeAudioData(buf, res, rej);
+      if (p && p.then) p.then(res, rej);
+    });
+    const sr = audio.sampleRate, hop = 0.05, win = Math.max(1, Math.round(sr * hop));
+    const n = Math.floor(audio.length / win);
+    const chs = Array.from({ length: audio.numberOfChannels }, (_, i) => audio.getChannelData(i));
+    const e = new Float32Array(n);
+    for (let w = 0; w < n; w++) {
+      let s = 0, cnt = 0;
+      const st = w * win;
+      for (let i = st; i < st + win; i += 4) {
+        let v = 0;
+        for (let c = 0; c < chs.length; c++) v += chs[c][i];
+        v /= chs.length; s += v * v; cnt++;
+      }
+      e[w] = Math.sqrt(s / Math.max(1, cnt));
+    }
+    const pre = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) pre[i + 1] = pre[i] + e[i];
+    const mean = (a, b) => { a = Math.max(0, a); b = Math.min(n, b); return b > a ? (pre[b] - pre[a]) / (b - a) : 0; };
+    const span = Math.round(4 / hop);
+    const startW = Math.round(6 / hop);
+    const endW = Math.min(n - span, Math.round(Math.min(audio.duration * 0.85, 180) / hop));
+    let best = -Infinity, bestW = startW;
+    for (let w = startW; w < endW; w++) {
+      const after = mean(w, w + span), before = mean(w - span, w);
+      const score = (after - before) * after;
+      if (score > best) { best = score; bestW = w; }
+    }
+    // Finjuster: største økning i energi innenfor ±1 s
+    let ref = bestW, bestD = -Infinity;
+    for (let w = bestW - 20; w <= bestW + 20; w++) {
+      const d = mean(w, w + 4) - mean(w - 4, w);
+      if (d > bestD) { bestD = d; ref = w; }
+    }
+    const ms = Math.max(0, Math.round((ref * hop * 1000) / 100) * 100);
+    dropSuggestions.set(t.plexKey, ms);
+    return ms;
+  }
+  let autoDropping = false;
+  async function autoDropAll() {
+    if (autoDropping) return;
+    if (!plexReady() && !(await plexConnect(false))) return;
+    const list = tracksIn(adminCat).filter((t) => t.source === 'plex' && !t.dropMs);
+    if (!list.length) { notify(`Alle sangene i «${CATS[adminCat].navn}» har allerede dropp.`, 'info', { key: 'autodrop' }); return; }
+    autoDropping = true;
+    const btn = $('autoDropBtn');
+    btn.disabled = true;
+    let ok = 0, failed = 0;
+    for (const t of list) {
+      btn.textContent = `Analyserer ${ok + failed + 1} av ${list.length} …`;
+      try { t.dropMs = await suggestDrop(t); ok++; saveTracks(); } catch { failed++; }
+    }
+    renderAll();
+    btn.disabled = false; btn.textContent = 'Foreslå dropp automatisk';
+    autoDropping = false;
+    notify(`Foreslo dropp for ${ok} sanger${failed ? ` (${failed} kunne ikke analyseres)` : ''}. Sjekk dem gjerne med Dropp-finneren.`, failed ? 'warn' : 'success', { key: 'autodrop', timeout: 8000 });
+  }
+
+  /* =====================================================================
    * Spotify Web Playback SDK
    * ===================================================================== */
   function initPlayer() {
@@ -1685,6 +2380,7 @@
 
   /** Må kalles direkte i en brukerhandling (klikk/tast) for å tillate lyd. */
   function unlockAudio() {
+    if (usePlex()) { localUnlock(); return; }
     if (!player || audioUnlocked) return;
     try { if (typeof player.activateElement === 'function') player.activateElement(); } catch { /* ignorer */ }
     audioUnlocked = true;
@@ -1714,6 +2410,7 @@
    * Avspilling
    * ===================================================================== */
   async function playTrack(track, mode) {
+    if (track.source === 'plex') return playLocal(track, mode);
     if (!tokens) {
       notify('Du må logge inn med Spotify først (se «Spotify Oppsett» øverst).', 'error', { key: 'play' });
       openSetup();
@@ -1850,7 +2547,7 @@
 
   async function fadeOut(durationMs = FADE_MS, fromAuto = false) {
     // Uten volumkontroll (f.eks. Spotify-appen på iPad) kan vi ikke fade – stopp direkte.
-    if (isRemote() ? (!output.deviceId || remoteVolUnsupported) : !player) { return emergencyStop(); }
+    if (!usePlex() && (isRemote() ? (!output.deviceId || remoteVolUnsupported) : !player)) { return emergencyStop(); }
     if (!fromAuto) clearAutoStop();
     if (isFading) return;
     const my = ++fadeToken;
@@ -1860,14 +2557,14 @@
       let start = effectiveVolume();
       try { const v = await outGetVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk beregnet volum */ }
       // Nettleser: 15 steg à 100 ms. Fjernenhet: færre steg pga. nettverksforsinkelse.
-      const steps = isRemote() ? 8 : FADE_STEPS;
+      const steps = (!usePlex() && isRemote()) ? 8 : FADE_STEPS;
       const stepMs = durationMs / steps;
       const t0 = performance.now();
       for (let i = 1; i <= steps; i++) {
         await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
         if (my !== fadeToken) return;
         await outSetVolume(start * (1 - i / steps));
-        if (isRemote() && remoteVolUnsupported) break;
+        if (!usePlex() && isRemote() && remoteVolUnsupported) break;
       }
       if (my !== fadeToken) return;
       await outPause();
@@ -1890,7 +2587,7 @@
   async function emergencyStop() {
     cancelFade();
     try {
-      if (isRemote() ? output.deviceId : player) await outPause();
+      if (usePlex() || (isRemote() ? output.deviceId : player)) await outPause();
       else if (tokens) await api('PUT', '/me/player/pause');
     } catch (e) {
       if (e.status !== 403) notify(explainError(e), 'error', { key: 'play' });
@@ -1927,10 +2624,10 @@
   function setStatus(state, text) {
     $('statusDot').className = 'dot' + (state === 'on' ? ' on' : state === 'wait' ? ' wait' : '');
     $('statusText').textContent = text;
-    $('setupSummary').textContent = state === 'on' ? '· tilkoblet' : tokens ? '· ' + text.toLowerCase() : '· ikke innlogget';
+    $('setupSummary').textContent = state === 'on' ? '· tilkoblet' : usePlex() ? '· ikke tilkoblet' : tokens ? '· ' + text.toLowerCase() : '· ikke innlogget';
   }
 
-  function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked && !isRemote()); }
+  function renderUnlock() { $('unlockPill').hidden = !(player && !audioUnlocked && !isRemote() && !usePlex()); }
 
   function renderOutput() {
     const sel = $('outSel');
@@ -1968,8 +2665,8 @@
   function applyViewMode() {
     const admin = window.location.hash === '#admin' || !DEFAULT_CLIENT_ID;
     document.body.classList.toggle('simple', !admin);
-    $('setupTitle').textContent = admin ? 'Spotify-oppsett' : 'Avspillingsenhet';
-    if (admin && DEFAULT_CLIENT_ID && window.location.hash === '#admin') openSetup();
+    $('setupTitle').textContent = usePlex() ? (admin ? 'Oppsett · Plex' : 'Musikkbibliotek') : (admin ? 'Spotify-oppsett' : 'Avspillingsenhet');
+    if (window.location.hash === '#admin') openSetup();
   }
 
   function renderAuth() {
@@ -1996,7 +2693,7 @@
   /** Viser hvilken Spotify-konto som er tilknyttet, øverst til høyre. */
   function renderAccountChip() {
     const wrap = $('acct');
-    if (!tokens || !profile) { wrap.hidden = true; $('acctMenu').hidden = true; return; }
+    if (usePlex() || !tokens || !profile) { wrap.hidden = true; $('acctMenu').hidden = true; return; }
     wrap.hidden = false;
     const name = profile.display_name || profile.id || 'Spotify-bruker';
     const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '?';
@@ -2064,7 +2761,7 @@
     autoTagEl = null;
     const addTag = (text, cls) => { const s = document.createElement('span'); s.className = 'tag ' + (cls || ''); s.textContent = text; tags.appendChild(s); return s; };
 
-    const matches = np && ls && (ls.uri === np.track.spotifyUri || ls.linkedUri === np.track.spotifyUri);
+    const matches = np && ls && (ls.uri === trackUri(np.track) || ls.linkedUri === trackUri(np.track));
     if (np && (!ls || matches)) {
       $('npTitle').textContent = np.track.tittel || (ls && ls.name) || 'Ukjent';
       $('npArtist').textContent = np.track.artist || (ls && ls.artists) || '';
@@ -2078,7 +2775,7 @@
       $('npArtist').textContent = ls.artists;
     } else {
       $('npTitle').textContent = 'Ingenting spilles';
-      $('npArtist').textContent = tokens ? 'Trykk MÅL!, TIMEOUT eller PAUSE for å starte' : 'Logg inn med Spotify for å starte';
+      $('npArtist').textContent = (tokens || usePlex()) ? 'Trykk MÅL, TIMEOUT eller PAUSE for å starte' : 'Logg inn med Spotify for å starte';
     }
     if (ls && ls.paused && (ls.name || np)) addTag('Pauset', 'paused');
 
@@ -2181,6 +2878,7 @@
     $('adminSummary').textContent = '· ' + CAT_KEYS.map((k) => `${CATS[k].navn} ${tracksIn(k).length}`).join(' · ');
     if (!editingId) $('formTitle').textContent = `Legg til enkeltsang`;
 
+    $('trackForm').hidden = usePlex() && !editingId;
     const ul = $('trackList');
     ul.textContent = '';
     const list = tracksIn(adminCat);
@@ -2255,7 +2953,7 @@
     const t = tracks.find((x) => x.id === id);
     if (!t) return;
     editingId = id;
-    $('fLink').value = 'https://open.spotify.com/track/' + uriToId(t.spotifyUri);
+    $('fLink').value = t.source === 'plex' ? '' : 'https://open.spotify.com/track/' + uriToId(t.spotifyUri);
     $('fTitle').value = t.tittel;
     $('fArtist').value = t.artist;
     $('fCat').value = t.kategori;
@@ -2263,7 +2961,7 @@
     $('formTitle').textContent = 'Rediger: ' + t.tittel;
     $('saveTrackBtn').textContent = 'Lagre endringer';
     $('cancelEditBtn').hidden = false;
-    setLinkHint('Track ID: ' + uriToId(t.spotifyUri), 'ok');
+    setLinkHint(t.source === 'plex' ? '' : 'Track ID: ' + uriToId(t.spotifyUri), t.source === 'plex' ? '' : 'ok');
     renderTrackList();
     $('trackForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
     $('fDrop').focus();
@@ -2319,6 +3017,17 @@
   function onSubmit(ev) {
     ev.preventDefault();
     const f = readForm();
+    const cur = editingId ? tracks.find((t) => t.id === editingId) : null;
+    if (cur && cur.source === 'plex') {
+      if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); return; }
+      if (cur.kategori !== f.kategori) removeFromPlayed(cur.id);
+      Object.assign(cur, { tittel: f.tittel || cur.tittel, artist: f.artist, kategori: f.kategori, dropMs: Math.round(f.secs * 1000) });
+      notify(`«${cur.tittel}» er oppdatert.`, 'success');
+      adminCat = cur.kategori;
+      saveTracks(); savePlayed(); resetForm(); renderAll();
+      return;
+    }
+    if (usePlex()) { notify('Sanger legges til fra Plex-spillelister.', 'info', { key: 'form' }); return; }
     if (!f.tid) { setLinkHint('Ugyldig Spotify-lenke eller URI.', 'bad'); $('fLink').focus(); return; }
     if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); $('fDrop').focus(); return; }
     clearNotice('form');
@@ -2349,6 +3058,13 @@
 
   function testFromForm() {
     const f = readForm();
+    const cur = editingId ? tracks.find((t) => t.id === editingId) : null;
+    if (cur && cur.source === 'plex') {
+      if (!Number.isFinite(f.secs) || f.secs < 0) return;
+      unlockAudio();
+      playTrack({ ...cur, dropMs: Math.round(f.secs * 1000) }, 'test');
+      return;
+    }
     if (!f.tid) { setLinkHint('Lim inn en gyldig Spotify-lenke først.', 'bad'); return; }
     if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); return; }
     unlockAudio();
@@ -2415,7 +3131,9 @@
       versjon: 2,
       eksportert: new Date().toISOString(),
       innstillinger: settings,
-      tracks: tracks.map(({ id, kategori, tittel, artist, spotifyUri, dropMs }) => ({ id, kategori, tittel, artist, spotifyUri, dropMs }))
+      tracks: tracks.map((t) => t.source === 'plex'
+        ? { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, dropMs: t.dropMs }
+        : { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, spotifyUri: t.spotifyUri, dropMs: t.dropMs })
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -2482,8 +3200,8 @@
   const finderTrack = () => tracks.find((t) => t.id === finder.queue[finder.idx]);
 
   function startFinder() {
-    if (!tokens || (isRemote() ? !output.deviceId : (!player || !deviceId))) {
-      notify('Logg inn med Spotify og vent til statusen øverst er grønn (eller velg avspillingsenhet) før du starter Dropp-finneren.', 'warn', { key: 'finder' });
+    if (usePlex() ? !plexReady() : (!tokens || (isRemote() ? !output.deviceId : (!player || !deviceId)))) {
+      notify(usePlex() ? 'Musikkbiblioteket (Plex) må være tilkoblet før du starter Dropp-finneren.' : 'Logg inn med Spotify og vent til statusen øverst er grønn (eller velg avspillingsenhet) før du starter Dropp-finneren.', 'warn', { key: 'finder' });
       return;
     }
     const cat = adminCat;
@@ -2510,7 +3228,23 @@
       return finderDone();
     }
     renderFinder();
-    const start = t.dropMs > 0 ? Math.max(0, t.dropMs - 5000) : settings.finder.startSek * 1000;
+    finder.suggestion = null;
+    $('fnAccept').hidden = true;
+    let start = t.dropMs > 0 ? Math.max(0, t.dropMs - 5000) : settings.finder.startSek * 1000;
+    if (t.source === 'plex') {
+      const idx = finder.idx;
+      $('fnSaved').textContent = 'Analyserer lyden …';
+      try {
+        const sug = await suggestDrop(t);
+        if (idx !== finder.idx || !finder.active) return;
+        finder.suggestion = sug;
+        if (!(t.dropMs > 0)) start = Math.max(0, sug - 4000);
+        $('fnAccept').hidden = false;
+        $('fnAccept').textContent = `Bruk forslaget ${fmtMs(sug, true)} (A)`;
+      } catch { /* spill uten forslag */ }
+      if (idx !== finder.idx || !finder.active) return;
+      renderFinder();
+    }
     await playTrack({ ...t, dropMs: start }, 'test');
   }
 
@@ -2520,7 +3254,7 @@
     $('fnCount').textContent = `${CATS[finder.cat].navn} · ${finder.idx + 1} av ${finder.queue.length}`;
     $('fnTitle').textContent = t.tittel;
     $('fnArtist').textContent = t.artist;
-    $('fnSaved').textContent = t.dropMs > 0 ? `Lagret dropp: ${fmtMs(t.dropMs, true)}` : 'Ingen dropp lagret ennå';
+    $('fnSaved').textContent = (t.dropMs > 0 ? `Lagret dropp: ${fmtMs(t.dropMs, true)}` : 'Ingen dropp lagret ennå') + (finder.suggestion != null ? ` · Forslag: ${fmtMs(finder.suggestion, true)}` : '');
     $('fnPrev').disabled = finder.idx === 0;
     updateFinderPos();
   }
@@ -2529,7 +3263,7 @@
     if (!finder.active) return;
     const t = finderTrack();
     const ls = liveState;
-    const ok = ls && ls.duration && t && (ls.uri === t.spotifyUri || ls.linkedUri === t.spotifyUri);
+    const ok = ls && ls.duration && t && (ls.uri === trackUri(t) || ls.linkedUri === trackUri(t));
     if (!ok) { $('fnPos').textContent = '–:–'; $('fnBar').style.width = '0'; $('fnMarkLine').hidden = true; return; }
     const pos = ls.paused ? ls.position : Math.min(ls.duration, ls.position + (performance.now() - ls.stamp));
     $('fnPos').textContent = fmtMs(pos, true);
@@ -2545,7 +3279,9 @@
     if (!t) return;
     // Les posisjonen umiddelbart (lokalt estimat) – en API-forespørsel ville gitt ekstra forsinkelse.
     let pos = null;
-    if (isRemote()) {
+    if (usePlex()) {
+      if (local.el && local.track && trackUri(local.track) === trackUri(t) && local.el.getAttribute('src')) pos = local.el.currentTime * 1000;
+    } else if (isRemote()) {
       if (liveState && (liveState.uri === t.spotifyUri || liveState.linkedUri === t.spotifyUri)) pos = currentPos();
     } else if (player) {
       try { const st = await player.getCurrentState(); if (st) pos = st.position; } catch { /* ignorer */ }
@@ -2560,6 +3296,17 @@
     finderNext();
   }
 
+  function finderAccept() {
+    const t = finderTrack();
+    if (!t || finder.suggestion == null) return;
+    t.dropMs = finder.suggestion;
+    saveTracks();
+    finder.saved++;
+    renderAll();
+    $('fnLast').textContent = `✓ «${t.tittel}» lagret: ${fmtMs(t.dropMs, true)} (forslag)`;
+    finderNext();
+  }
+
   function finderNext() {
     if (finder.idx < finder.queue.length - 1) { finder.idx++; finderLoad(); }
     else finderDone();
@@ -2570,7 +3317,11 @@
   async function finderSeek(delta) {
     try {
       let pos, dur;
-      if (isRemote()) {
+      if (usePlex()) {
+        const el = local.el;
+        if (!el || !el.getAttribute('src')) return;
+        pos = el.currentTime * 1000; dur = Number.isFinite(el.duration) ? el.duration * 1000 : Infinity;
+      } else if (isRemote()) {
         if (!liveState) return;
         pos = currentPos(); dur = liveState.duration || Infinity;
       } else {
@@ -2588,7 +3339,7 @@
     if (!t.dropMs) { notify('Denne sangen har ingen lagret dropp ennå.', 'info', { key: 'finder' }); return; }
     try {
       const st = await outGetState();
-      if (st && (st.uri === t.spotifyUri || st.linkedUri === t.spotifyUri)) {
+      if (st && (st.uri === trackUri(t) || st.linkedUri === trackUri(t))) {
         await outSeek(t.dropMs);
         await outResume();
       } else {
@@ -2625,6 +3376,53 @@
 
   function pressAnim(id) { const b = $(id); b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 120); }
 
+  /* =====================================================================
+   * Brukervilkår og personvern
+   * ===================================================================== */
+  function hasConsent() { const c = store.get(LS.consent, null); return !!(c && c.version === TERMS_VERSION); }
+  function showLegal(mode, tab) {
+    // mode: 'consent' (må godtas) eller 'read' (bare lese)
+    $('consent').hidden = false;
+    document.body.classList.add('finder-open');
+    $('consentActions').hidden = mode !== 'consent';
+    $('docCloseRow').hidden = mode === 'consent';
+    selectLegalTab(tab || 'terms');
+  }
+  function selectLegalTab(tab) {
+    const terms = tab === 'terms';
+    $('tabTerms').setAttribute('aria-pressed', String(terms));
+    $('tabPrivacy').setAttribute('aria-pressed', String(!terms));
+    $('docTerms').hidden = !terms;
+    $('docPrivacy').hidden = terms;
+  }
+  function closeLegal() {
+    $('consent').hidden = true;
+    if (!finder.active) document.body.classList.remove('finder-open');
+  }
+  function bindConsent() {
+    document.querySelectorAll('.owner-name').forEach((el) => { el.textContent = OWNER_NAME; });
+    document.querySelectorAll('.owner-email').forEach((el) => { el.textContent = OWNER_EMAIL; });
+    document.querySelectorAll('.owner-email-link').forEach((el) => { el.href = /@/.test(OWNER_EMAIL) ? 'mailto:' + OWNER_EMAIL : '#'; });
+    document.querySelectorAll('.terms-version').forEach((el) => { el.textContent = TERMS_VERSION; });
+    $('tabTerms').addEventListener('click', () => selectLegalTab('terms'));
+    $('tabPrivacy').addEventListener('click', () => selectLegalTab('privacy'));
+    $('consentChk').addEventListener('change', () => { $('consentBtn').disabled = !$('consentChk').checked; });
+    $('consentBtn').addEventListener('click', () => {
+      if (!$('consentChk').checked) return;
+      store.set(LS.consent, { version: TERMS_VERSION, at: new Date().toISOString() });
+      closeLegal();
+    });
+    $('docCloseBtn').addEventListener('click', closeLegal);
+    $('openTerms').addEventListener('click', (e) => { e.preventDefault(); showLegal(hasConsent() ? 'read' : 'consent', 'terms'); });
+    $('openPrivacy').addEventListener('click', (e) => { e.preventDefault(); showLegal(hasConsent() ? 'read' : 'consent', 'privacy'); });
+    $('wipeBtn').addEventListener('click', async () => {
+      if (!confirm('Slette alle KampDJ-data på denne enheten? Sanglister, innstillinger, tilkoblinger og lagrede lydfiler fjernes.')) return;
+      try { Object.keys(localStorage).filter((k) => k.startsWith('soundboard.')).forEach((k) => localStorage.removeItem(k)); } catch { /* ignorer */ }
+      try { if ('caches' in window) await caches.delete(AUDIO_CACHE); } catch { /* ignorer */ }
+      window.location.replace(REDIRECT_URI);
+    });
+  }
+
   function bindEvents() {
     $('redirectUri').textContent = REDIRECT_URI;
     $('copyUriBtn').addEventListener('click', async () => {
@@ -2645,6 +3443,22 @@
     cid.value = (store.get(LS.clientId, '') || '').trim();
     if (DEFAULT_CLIENT_ID) cid.placeholder = 'Forhåndsinnstilt (' + DEFAULT_CLIENT_ID.slice(0, 6) + '…) – fyll inn bare for å overstyre';
     $('gateLoginBtn').addEventListener('click', () => login());
+    document.querySelectorAll('#sourceSeg [data-source]').forEach((b) => b.addEventListener('click', () => {
+      const v = b.dataset.source;
+      if (v === source) return;
+      store.set(LS.source, v);
+      window.location.reload();
+    }));
+    $('plexLoginBtn').addEventListener('click', plexLogin);
+    $('plexLogoutBtn').addEventListener('click', () => { if (confirm('Koble Plex fra denne enheten?')) plexDisconnect(); });
+    $('plexReconnect').addEventListener('click', () => plexConnect(false, $('plexServerSel').value || undefined));
+    $('plexServerSel').addEventListener('change', () => { const v = $('plexServerSel').value; if (v) plexConnect(false, v); });
+    $('plexPlBtn').addEventListener('click', importPlexPlaylist);
+    $('plexPlRefresh').addEventListener('click', () => loadPlexPlaylists(false));
+    $('prepBtn').addEventListener('click', prepareForMatch);
+    $('autoDropBtn').addEventListener('click', autoDropAll);
+    $('fnAccept').addEventListener('click', finderAccept);
+    bindConsent();
     $('acctBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleAccountMenu(); });
     $('acctMenu').addEventListener('click', (e) => e.stopPropagation());
     document.addEventListener('click', () => { if (!$('acctMenu').hidden) toggleAccountMenu(false); });
@@ -2676,6 +3490,7 @@
     $('statusPill').style.cursor = 'pointer';
     $('statusPill').title = 'Klikk for å koble til Spotify-spilleren på nytt';
     $('statusPill').addEventListener('click', async () => {
+      if (usePlex()) { if (!plexToken()) { openSetup(); return; } await plexConnect(false); return; }
       if (!tokens) { openSetup(); return; }
       if (isRemote()) { await refreshDevices(false); if (!devicesCache.some((d) => d.id === output.deviceId)) openSetup(); return; }
       unlockAudio();
@@ -2697,7 +3512,8 @@
       $('volumeVal').textContent = masterVolume + ' %';
       store.set(LS.volume, masterVolume);
       if (isFading) return;
-      if (isRemote()) {
+      if (usePlex()) localSetVolume(effectiveVolume());
+      else if (isRemote()) {
         clearTimeout(volDebounce);
         volDebounce = setTimeout(() => outSetVolume(effectiveVolume()).catch(() => {}), 250);
       } else if (player) player.setVolume(effectiveVolume()).catch(() => {});
@@ -2777,6 +3593,7 @@
     // Tastatursnarveier
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!$('consent').hidden) return; // ingen snarveier før vilkårene er godtatt
       const isSpace = e.code === 'Space' || e.key === ' ';
       const k = (e.key || '').toLowerCase();
       if (finder.active) {
@@ -2788,7 +3605,7 @@
           finderSeek(e.key === 'ArrowLeft' ? -step : step);
           return;
         }
-        const fmap = { d: finderMark, n: finderNext, b: finderPrev, r: finderReplay };
+        const fmap = { d: finderMark, n: finderNext, b: finderPrev, r: finderReplay, a: finderAccept };
         if (isSpace) { e.preventDefault(); if (!e.repeat) outToggle().catch(() => {}); return; }
         if (fmap[k]) { e.preventDefault(); if (!e.repeat) fmap[k](); }
         return; // ingen andre snarveier mens Dropp-finneren er åpen
@@ -2830,7 +3647,10 @@
    * Oppstart
    * ===================================================================== */
   async function start() {
+    document.body.classList.toggle('src-plex', usePlex());
+    document.querySelectorAll('#sourceSeg [data-source]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.source === source)));
     bindEvents();
+    if (!hasConsent()) showLegal('consent', 'terms');
     applyViewMode();
     window.addEventListener('hashchange', applyViewMode);
     renderEnvWarning();
@@ -2840,6 +3660,18 @@
     renderNowPlaying();
     setStatus('off', 'Ikke tilkoblet');
     requestWakeLock();
+    if (usePlex()) {
+      // Plex-modus: åpen for alle, ingen innlogging for brukerne
+      setLocked(false);
+      renderPlex();
+      await plexHandleReturn();
+      if (plexToken()) await plexConnect(true);
+      else setStatus('off', 'Musikkbibliotek ikke koblet til');
+      if (!plexReady()) openSetup();
+      renderPlex();
+      updatePrepHint();
+      return;
+    }
     setLocked(true, (tokens || new URLSearchParams(location.search).has('code')) ? 'checking' : undefined);
 
     await handleRedirect();
