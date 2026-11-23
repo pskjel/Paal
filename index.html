@@ -393,7 +393,15 @@
   .fn-saved { text-align: center; font-weight: 600; color: var(--text2); }
   .fn-seek { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
   .fn-seek .btn { padding: 8px 4px; font-family: var(--mono); }
-  .fn-nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .fn-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  @media (max-width: 560px) { .fn-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .fn-scrub { position: relative; padding: 6px 0; }
+  .fn-scrub input[type=range] { width: 100%; height: 36px; display: block; cursor: pointer; }
+  .fn-scrub .mk { position: absolute; top: 2px; bottom: 2px; width: 2px; border-radius: 2px; pointer-events: none; transform: translateX(-1px); }
+  .fn-scrub .mk.saved { background: var(--text); }
+  .fn-scrub .mk.sug { background: var(--gold); opacity: .9; }
+  .fn-legend { display: flex; gap: 16px; justify-content: center; font-size: .74rem; color: var(--muted); }
+  .fn-legend i { display: inline-block; width: 10px; height: 2px; vertical-align: middle; margin-right: 6px; }
   .fn-nav .btn { padding: 8px 6px; font-size: .86rem; }
   #fnMark {
     width: 100%; min-height: 96px; border: 0; border-radius: 20px; color: var(--gold-ink); background: var(--gold);
@@ -799,7 +807,12 @@
         <div class="fn-artist" id="fnArtist"></div>
       </div>
       <div class="fn-pos"><span id="fnPos">0:00.0</span> <small>/ <span id="fnDur">0:00</span></small></div>
-      <div class="prog"><i id="fnBar"></i><b id="fnMarkLine" hidden></b></div>
+      <div class="fn-scrub">
+        <input type="range" id="fnSlider" min="0" max="1000" step="100" value="0" aria-label="Spol i sangen">
+        <b class="mk saved" id="fnMarkLine" hidden></b>
+        <b class="mk sug" id="fnSugLine" hidden></b>
+      </div>
+      <div class="fn-legend"><span><i style="background:var(--text)"></i>Lagret dropp</span><span><i style="background:var(--gold)"></i>Forslag</span></div>
       <div class="fn-saved" id="fnSaved"></div>
       <div class="fn-seek">
         <button class="btn" type="button" data-seek="-5000">−5 s</button>
@@ -815,8 +828,9 @@
         <button class="btn" type="button" id="fnPrev">Forrige (B)</button>
         <button class="btn" type="button" id="fnReplay">Hør lagret (R)</button>
         <button class="btn" type="button" id="fnSkip">Hopp over (N)</button>
+        <button class="btn danger" type="button" id="fnDelete">Slett sang (Del)</button>
       </div>
-      <div class="hint" style="text-align:center"><kbd>Space</kbd> pause/spill · <kbd>←</kbd>/<kbd>→</kbd> ±5 s · <kbd>Shift</kbd>+pil ±1 s · <kbd>D</kbd> dropp · <kbd>R</kbd> hør lagret · <kbd>B</kbd>/<kbd>N</kbd> forrige/neste</div>
+      <div class="hint" style="text-align:center"><kbd>Space</kbd> pause/spill · <kbd>←</kbd>/<kbd>→</kbd> ±5 s · <kbd>Shift</kbd>+pil ±1 s · <kbd>D</kbd> dropp · <kbd>R</kbd> hør lagret · <kbd>B</kbd>/<kbd>N</kbd> forrige/neste · <kbd>A</kbd> bruk forslag · <kbd>Del</kbd> slett sang</div>
     </div>
   </div>
 
@@ -3348,14 +3362,17 @@
     const t = finderTrack();
     const ls = liveState;
     const ok = ls && ls.duration && t && (ls.uri === trackUri(t) || ls.linkedUri === trackUri(t));
-    if (!ok) { $('fnPos').textContent = '–:–'; $('fnBar').style.width = '0'; $('fnMarkLine').hidden = true; return; }
+    const slider = $('fnSlider');
+    if (!ok) { $('fnPos').textContent = '–:–'; if (!finder.dragging) slider.value = 0; $('fnMarkLine').hidden = true; $('fnSugLine').hidden = true; return; }
     const pos = ls.paused ? ls.position : Math.min(ls.duration, ls.position + (performance.now() - ls.stamp));
-    $('fnPos').textContent = fmtMs(pos, true);
     $('fnDur').textContent = fmtMs(ls.duration);
-    $('fnBar').style.width = (pos / ls.duration) * 100 + '%';
+    slider.max = String(Math.round(ls.duration));
+    if (!finder.dragging) { slider.value = String(Math.round(pos)); $('fnPos').textContent = fmtMs(pos, true); }
+    const pct = (ms) => Math.min(100, Math.max(0, (ms / ls.duration) * 100)) + '%';
     const line = $('fnMarkLine');
-    if (t.dropMs > 0) { line.hidden = false; line.style.left = Math.min(100, (t.dropMs / ls.duration) * 100) + '%'; }
-    else line.hidden = true;
+    if (t.dropMs > 0) { line.hidden = false; line.style.left = pct(t.dropMs); } else line.hidden = true;
+    const sug = $('fnSugLine');
+    if (finder.suggestion != null) { sug.hidden = false; sug.style.left = pct(finder.suggestion); } else sug.hidden = true;
   }
 
   async function finderMark() {
@@ -3378,6 +3395,25 @@
     renderAll();
     $('fnLast').textContent = `✓ «${t.tittel}» lagret: ${fmtMs(ms, true)}`;
     finderNext();
+  }
+
+  function finderDelete() {
+    const t = finderTrack();
+    if (!t) return;
+    if (!confirm(`Slette «${t.tittel}» fra listen?`)) return;
+    try { outPause(); } catch { /* ignorer */ }
+    tracks = tracks.filter((x) => x.id !== t.id);
+    removeFromPlayed(t.id);
+    invalidIds.delete(t.id);
+    saveTracks(); savePlayed();
+    if (editingId === t.id) resetForm();
+    finder.queue.splice(finder.idx, 1);
+    renderAll();
+    if (typeof updatePrepHint === 'function') updatePrepHint();
+    $('fnLast').textContent = `«${t.tittel}» er slettet.`;
+    if (!finder.queue.length) { finderDone(); return; }
+    if (finder.idx >= finder.queue.length) finder.idx = finder.queue.length - 1;
+    finderLoad();
   }
 
   function finderAccept() {
@@ -3542,6 +3578,16 @@
     $('prepBtn').addEventListener('click', prepareForMatch);
     $('autoDropBtn').addEventListener('click', autoDropAll);
     $('fnAccept').addEventListener('click', finderAccept);
+    $('fnDelete').addEventListener('click', finderDelete);
+    const sl = $('fnSlider');
+    sl.addEventListener('input', () => { finder.dragging = true; $('fnPos').textContent = fmtMs(Number(sl.value), true); });
+    sl.addEventListener('change', async () => {
+      const v = Number(sl.value);
+      try { await outSeek(v); } catch { /* ignorer */ }
+      if (liveState) { liveState.position = v; liveState.stamp = performance.now(); }
+      finder.dragging = false;
+    });
+    sl.addEventListener('pointerup', () => { setTimeout(() => { finder.dragging = false; }, 300); });
     bindConsent();
     $('acctBtn').addEventListener('click', (e) => { e.stopPropagation(); toggleAccountMenu(); });
     $('acctMenu').addEventListener('click', (e) => e.stopPropagation());
@@ -3689,6 +3735,7 @@
           finderSeek(e.key === 'ArrowLeft' ? -step : step);
           return;
         }
+        if (e.key === 'Delete') { e.preventDefault(); if (!e.repeat) finderDelete(); return; }
         const fmap = { d: finderMark, n: finderNext, b: finderPrev, r: finderReplay, a: finderAccept };
         if (isSpace) { e.preventDefault(); if (!e.repeat) outToggle().catch(() => {}); return; }
         if (fmap[k]) { e.preventDefault(); if (!e.repeat) fmap[k](); }
