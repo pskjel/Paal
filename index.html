@@ -2246,21 +2246,35 @@
   }
 
   /* ---------- Lydmotor (HTML Audio + Web Audio for volum/fade, også på iPad) ---------- */
-  const local = { ctx: null, el: null, gain: null, wa: false, unlocked: false, track: null, urls: new Map() };
+  // To avspillere: elWA er koblet til Web Audio (fade/volum på lydklokken, krever CORS fra Plex),
+  // elPlain er en enkel reserve som virker uten CORS (volum via el.volume – ikke på iPhone).
+  const local = { ctx: null, el: null, elWA: null, elPlain: null, gain: null, wa: false, unlocked: false, track: null, urls: new Map(), preferPlain: false, trying: false };
 
-  function localEl() {
-    if (local.el) return local.el;
+  function makeAudioEl(cors) {
     const el = document.createElement('audio');
     el.preload = 'auto';
-    el.crossOrigin = 'anonymous';
+    if (cors) el.crossOrigin = 'anonymous';
     el.setAttribute('playsinline', '');
-    ['play', 'pause', 'ended', 'loadedmetadata', 'seeked'].forEach((ev) => el.addEventListener(ev, () => onLocalState(true)));
-    el.addEventListener('timeupdate', () => onLocalState(false));
+    ['play', 'pause', 'ended', 'loadedmetadata', 'seeked'].forEach((ev) => el.addEventListener(ev, () => { if (el === local.el) onLocalState(true); }));
+    el.addEventListener('timeupdate', () => { if (el === local.el) onLocalState(false); });
     el.addEventListener('error', () => {
-      if (local.track && el.getAttribute('src')) notify('Kunne ikke spille lydfilen fra Plex. Sjekk at Plex-serveren er på og tilgjengelig.', 'error', { key: 'play' });
+      if (el === local.el && !local.trying && local.track && el.getAttribute('src') && !el.getAttribute('src').startsWith('blob:')) {
+        notify('Lydfilen fra Plex stoppet (' + mediaErrorText(el) + '). Sjekk at PC-en med Plex er på og har nett.', 'error', { key: 'play' });
+      }
     });
-    local.el = el;
     return el;
+  }
+  function localEl() {
+    if (!local.elWA) { local.elWA = makeAudioEl(true); if (!local.el) local.el = local.elWA; }
+    return local.elWA;
+  }
+  function plainEl() {
+    if (!local.elPlain) local.elPlain = makeAudioEl(false);
+    return local.elPlain;
+  }
+  function mediaErrorText(el) {
+    const c = el && el.error && el.error.code;
+    return c === 1 ? 'avbrutt' : c === 2 ? 'nettverksfeil' : c === 3 ? 'kunne ikke dekode lydfilen' : c === 4 ? 'formatet eller tilgangen ble avvist' : 'ukjent feil';
   }
   function silentWavUrl() {
     const n = 2205, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
@@ -2287,20 +2301,40 @@
     } catch { local.wa = false; }
     if (!local.unlocked && !el.getAttribute('src')) {
       local.unlocked = true;
-      el.src = silentWavUrl();
-      el.play().then(() => el.pause()).catch(() => {});
+      const sil = silentWavUrl();
+      [el, plainEl()].forEach((x) => { x.src = sil; x.play().then(() => x.pause()).catch(() => {}); });
     }
   }
   function localSetVolume(v) {
     v = Math.max(0, Math.min(1, v));
-    if (local.wa && local.gain) local.gain.gain.value = v;
-    else if (local.el) { try { local.el.volume = v; } catch { /* iOS: skrivebeskyttet */ } }
+    if (local.wa && local.gain) {
+      const g = local.gain.gain;
+      try { g.cancelScheduledValues(local.ctx.currentTime); } catch { /* ignorer */ }
+      g.value = local.el === local.elWA ? v : 1;
+    }
+    if (local.el && local.el !== local.elWA) { try { local.el.volume = v; } catch { /* iOS: skrivebeskyttet */ } }
+  }
+  /**
+   * Planlegger fade-ut på lydmotorens egen klokke (Web Audio). Gjennomføres av lydsystemet selv om
+   * nettsiden settes på vent (låst skjerm / bakgrunn på mobil). Returnerer false hvis ikke mulig.
+   */
+  function localScheduleFade(delaySec, durSec) {
+    if (!(local.wa && local.gain && local.ctx) || local.el !== local.elWA) return false;
+    if (local.ctx.state !== 'running') { try { local.ctx.resume(); } catch { /* ignorer */ } if (local.ctx.state !== 'running') return false; }
+    const g = local.gain.gain, now = local.ctx.currentTime, v = g.value;
+    try {
+      g.cancelScheduledValues(now);
+      g.setValueAtTime(v, now);
+      if (delaySec > 0) g.setValueAtTime(v, now + delaySec);
+      g.linearRampToValueAtTime(0, now + Math.max(0, delaySec) + Math.max(0.02, durSec));
+      return true;
+    } catch { return false; }
   }
   function localGetVolume() {
-    if (local.wa && local.gain) return local.gain.gain.value;
+    if (local.wa && local.gain && local.el === local.elWA) return local.gain.gain.value;
     return local.el ? local.el.volume : effectiveVolume();
   }
-  function localStop() { if (local.el) { try { local.el.pause(); } catch { /* ignorer */ } } }
+  function localStop() { [local.elWA, local.elPlain].forEach((x) => { if (x) { try { x.pause(); } catch { /* ignorer */ } } }); }
 
   function onLocalState(full) {
     const el = local.el, t = local.track;
@@ -2325,24 +2359,45 @@
     }
     cancelFade();
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
-    const el = localEl();
     localUnlock();
     let url = null;
-    try { url = await audioCacheUrl(track); } catch { url = null; }
+    // Lagrede filer finnes bare hos admin; besøkende strømmer alltid (og slipper ekstra venting før avspilling)
+    if (isAdmin) { try { url = await audioCacheUrl(track); } catch { url = null; } }
     if (!url) url = plexStreamUrl(track);
     local.track = track;
-    localSetVolume(effectiveVolume());
     const startSec = Math.max(0, (track.dropMs || 0) / 1000);
-    try {
-      el.src = url + '#t=' + startSec.toFixed(2);
+    const tryPlay = (el) => new Promise((resolve, reject) => {
+      localStop();
+      local.el = el;
+      localSetVolume(effectiveVolume());
+      const timer = setTimeout(() => { try { el.pause(); } catch { /* ignorer */ } reject(Object.assign(new Error('tidsavbrudd'), { name: 'TimeoutError' })); }, 15000);
+      const onErr = () => { clearTimeout(timer); reject(Object.assign(new Error(mediaErrorText(el)), { name: 'MediaError' })); };
+      el.addEventListener('error', onErr, { once: true });
       const seekIfNeeded = () => { if (Math.abs(el.currentTime - startSec) > 0.4) { try { el.currentTime = startSec; } catch { /* ignorer */ } } };
       el.addEventListener('loadedmetadata', seekIfNeeded, { once: true });
-      await el.play();
-      seekIfNeeded();
-    } catch (e) {
-      const msg = e && e.name === 'NotAllowedError'
+      el.src = url + '#t=' + startSec.toFixed(2);
+      el.play().then(() => { clearTimeout(timer); el.removeEventListener('error', onErr); seekIfNeeded(); resolve(); },
+        (e) => { clearTimeout(timer); el.removeEventListener('error', onErr); reject(e); });
+    });
+    let err = null;
+    local.trying = true;
+    if (!local.preferPlain) {
+      try { await tryPlay(localEl()); } catch (e) { err = e; }
+    } else err = { name: 'skip' };
+    if (err && err.name !== 'NotAllowedError') {
+      // Reserve: enkel avspiller uten Web Audio (virker selv om Plex ikke tillater CORS)
+      try {
+        try { local.elWA && local.elWA.removeAttribute('src'); local.elWA && local.elWA.load(); } catch { /* ignorer */ }
+        await tryPlay(plainEl());
+        if (err.name !== 'TimeoutError' && err.name !== 'skip') local.preferPlain = true;
+        err = null;
+      } catch (e2) { err = e2; }
+    }
+    local.trying = false;
+    if (err) {
+      const msg = err.name === 'NotAllowedError'
         ? 'Nettleseren blokkerte lyden. Trykk én gang på skjermen og prøv igjen.'
-        : 'Kunne ikke spille sangen fra Plex. Sjekk at Plex-serveren er på, eller trykk «Gjør klar til kamp» for å lagre sangene på enheten.';
+        : `Kunne ikke spille sangen fra Plex (${err.message || err.name}). Sjekk at PC-en med Plex er på og har nett.`;
       notify(msg, 'error', { key: 'play' });
       return false;
     }
@@ -2726,9 +2781,25 @@
   }
 
   /* ---------- Auto-stopp for MÅL ---------- */
+  let autoFadeUiTimer = null;
+  function finishLocalAutoStop() {
+    autoStopTimer = null;
+    localStop();
+    isFading = false;
+    $('fadeBtn').classList.remove('fading');
+    clearAutoStop();
+    setTimeout(() => { if (!(local.el && !local.el.paused)) { volFactor = 1; localSetVolume(masterVolume / 100); } }, 150);
+  }
   function scheduleAutoStop(ms) {
     clearAutoStop();
     autoStopAt = Date.now() + ms;
+    const fadeDur = settings.autoStopFade ? Math.min(FADE_MS, ms) : 0;
+    // Plex: hele nedtoningen planlegges på lydklokken med en gang
+    if (usePlex() && localScheduleFade((ms - fadeDur) / 1000, fadeDur / 1000)) {
+      if (fadeDur) autoFadeUiTimer = setTimeout(() => { isFading = true; $('fadeBtn').classList.add('fading'); }, ms - fadeDur);
+      autoStopTimer = setTimeout(finishLocalAutoStop, ms + 30);
+      return;
+    }
     if (settings.autoStopFade) {
       const fadeDur = Math.min(FADE_MS, ms);
       autoStopTimer = setTimeout(() => { autoStopTimer = null; fadeOut(fadeDur, true); }, ms - fadeDur);
@@ -2738,6 +2809,7 @@
   }
   function clearAutoStop() {
     clearTimeout(autoStopTimer);
+    clearTimeout(autoFadeUiTimer);
     autoStopTimer = null;
     if (autoStopAt !== null) { autoStopAt = null; if (autoTagEl) { autoTagEl.remove(); autoTagEl = null; } }
   }
@@ -2761,14 +2833,20 @@
       let start = effectiveVolume();
       try { const v = await outGetVolume(); if (typeof v === 'number' && v > 0) start = v; } catch { /* bruk beregnet volum */ }
       // Nettleser: 15 steg à 100 ms. Fjernenhet: færre steg pga. nettverksforsinkelse.
-      const steps = (!usePlex() && isRemote()) ? 8 : FADE_STEPS;
-      const stepMs = durationMs / steps;
-      const t0 = performance.now();
-      for (let i = 1; i <= steps; i++) {
-        await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
+      if (usePlex() && localScheduleFade(0, durationMs / 1000)) {
+        // Plex: fade på lydklokken (virker også når mobilen strupes)
+        await sleep(durationMs);
         if (my !== fadeToken) return;
-        await outSetVolume(start * (1 - i / steps));
-        if (!usePlex() && isRemote() && remoteVolUnsupported) break;
+      } else {
+        const steps = (!usePlex() && isRemote()) ? 8 : FADE_STEPS;
+        const stepMs = durationMs / steps;
+        const t0 = performance.now();
+        for (let i = 1; i <= steps; i++) {
+          await sleep(Math.max(0, t0 + i * stepMs - performance.now()));
+          if (my !== fadeToken) return;
+          await outSetVolume(start * (1 - i / steps));
+          if (!usePlex() && isRemote() && remoteVolUnsupported) break;
+        }
       }
       if (my !== fadeToken) return;
       await outPause();
