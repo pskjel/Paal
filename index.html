@@ -954,7 +954,7 @@
     <span><kbd>Esc</kbd> Nødstopp</span>
     <span>Snarveier er av mens du skriver i tekstfelt (Esc virker alltid).</span>
   </footer>
-  <p class="legal-links"><a href="#" id="openTerms">Brukervilkår</a><span aria-hidden="true">·</span><a href="#" id="openPrivacy">Personvernerklæring</a><span aria-hidden="true">·</span><a href="#" id="adminLink">Admin</a></p>
+  <p class="legal-links"><a href="#" id="openTerms">Brukervilkår</a><span aria-hidden="true">·</span><a href="#" id="openPrivacy">Personvernerklæring</a><span aria-hidden="true">·</span><a href="#" id="adminLink">Admin</a><span aria-hidden="true">·</span><span id="appVersion"></span></p>
 </div>
 
 <script>
@@ -983,6 +983,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
+  const APP_VERSION = '2026-11-23.4';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -1637,14 +1638,14 @@
     return lastRemoteVolume ?? effectiveVolume();
   }
   async function outPause() {
-    if (usePlex()) { localStop(); return; }
+    if (usePlex()) { localHardStop(); return; }
     if (!isRemote()) { if (player) await player.pause(); return; }
     try { await api('PUT', '/me/player/pause?device_id=' + enc(output.deviceId)); }
     catch (e) { if (e.status !== 403) throw e; } // 403 = allerede pauset
     if (liveState) { liveState.position = currentPos(); liveState.paused = true; liveState.stamp = performance.now(); }
   }
   async function outResume() {
-    if (usePlex()) { if (local.el && local.el.getAttribute('src')) await local.el.play(); return; }
+    if (usePlex()) { if (local.el && local.el.getAttribute('src')) { local.seq++; localSetVolume(effectiveVolume()); await local.el.play(); } return; }
     if (!isRemote()) { if (player) await player.resume(); return; }
     try { await api('PUT', '/me/player/play?device_id=' + enc(output.deviceId)); }
     catch (e) { if (e.status !== 403) throw e; }
@@ -1658,7 +1659,7 @@
     if (liveState) { liveState.position = ms; liveState.stamp = performance.now(); updateProgress(); }
   }
   async function outToggle() {
-    if (usePlex()) { const el = local.el; if (!el || !el.getAttribute('src')) return; if (el.paused) await el.play(); else el.pause(); return; }
+    if (usePlex()) { const el = local.el; if (!el || !el.getAttribute('src')) return; if (el.paused) { local.seq++; localSetVolume(effectiveVolume()); await el.play(); } else localHardStop(); return; }
     if (!isRemote()) { if (player) await player.togglePlay(); return; }
     if (liveState && !liveState.paused) await outPause(); else await outResume();
   }
@@ -2248,7 +2249,7 @@
   /* ---------- Lydmotor (HTML Audio + Web Audio for volum/fade, også på iPad) ---------- */
   // To avspillere: elWA er koblet til Web Audio (fade/volum på lydklokken, krever CORS fra Plex),
   // elPlain er en enkel reserve som virker uten CORS (volum via el.volume – ikke på iPhone).
-  const local = { ctx: null, el: null, elWA: null, elPlain: null, gain: null, wa: false, unlocked: false, track: null, urls: new Map(), preferPlain: false, trying: false };
+  const local = { ctx: null, el: null, elWA: null, elPlain: null, gain: null, wa: false, unlocked: false, track: null, urls: new Map(), preferPlain: false, trying: false, seq: 0 };
 
   function makeAudioEl(cors) {
     const el = document.createElement('audio');
@@ -2335,6 +2336,16 @@
     return local.el ? local.el.volume : effectiveVolume();
   }
   function localStop() { [local.elWA, local.elPlain].forEach((x) => { if (x) { try { x.pause(); } catch { /* ignorer */ } } }); }
+  /** Stopper sikkert: demper med en gang, pauser, og sjekker igjen etterpå (med mindre en ny sang er startet). */
+  function localHardStop() {
+    const seq = ++local.seq;
+    if (local.wa && local.gain && local.ctx) {
+      const g = local.gain.gain;
+      try { g.cancelScheduledValues(local.ctx.currentTime); g.setValueAtTime(0, local.ctx.currentTime); } catch { /* ignorer */ }
+    }
+    localStop();
+    [300, 1000].forEach((ms) => setTimeout(() => { if (local.seq === seq && !local.trying) localStop(); }, ms));
+  }
 
   function onLocalState(full) {
     const el = local.el, t = local.track;
@@ -2358,6 +2369,7 @@
       }
     }
     cancelFade();
+    local.seq++;
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     localUnlock();
     let url = null;
@@ -2784,11 +2796,11 @@
   let autoFadeUiTimer = null;
   function finishLocalAutoStop() {
     autoStopTimer = null;
-    localStop();
+    localHardStop();
     isFading = false;
     $('fadeBtn').classList.remove('fading');
     clearAutoStop();
-    setTimeout(() => { if (!(local.el && !local.el.paused)) { volFactor = 1; localSetVolume(masterVolume / 100); } }, 150);
+    volFactor = 1; // volumet settes igjen når neste sang starter
   }
   function scheduleAutoStop(ms) {
     clearAutoStop();
@@ -2850,10 +2862,12 @@
       }
       if (my !== fadeToken) return;
       await outPause();
-      await sleep(150);
-      if (my !== fadeToken) return;
       volFactor = 1;
-      await outSetVolume(masterVolume / 100); // klar til neste mål
+      if (!usePlex()) {
+        await sleep(150);
+        if (my !== fadeToken) return;
+        await outSetVolume(masterVolume / 100); // klar til neste mål (Plex: settes når neste sang starter)
+      }
     } catch (e) {
       notify('Fade-out feilet: ' + (e && e.message ? e.message : e), 'error');
       try { await outPause(); await outSetVolume(masterVolume / 100); } catch { /* ignorer */ }
@@ -2875,7 +2889,7 @@
       if (e.status !== 403) notify(explainError(e), 'error', { key: 'play' });
     }
     volFactor = 1;
-    try { await outSetVolume(masterVolume / 100); } catch { /* ignorer */ }
+    if (!usePlex()) { try { await outSetVolume(masterVolume / 100); } catch { /* ignorer */ } }
   }
 
   /* =====================================================================
@@ -3880,6 +3894,7 @@
     sl.addEventListener('pointerup', () => { setTimeout(() => { finder.dragging = false; }, 300); });
     bindConsent();
     $('adminLink').textContent = isAdmin ? 'Logg ut admin' : 'Admin';
+    $('appVersion').textContent = 'v' + APP_VERSION;
     $('adminLink').addEventListener('click', (e) => { e.preventDefault(); if (isAdmin) adminLogout(); else openAdminLogin(); });
     $('adminLogoutBtn').addEventListener('click', adminLogout);
     $('adminLoginClose').addEventListener('click', closeAdminLogin);
