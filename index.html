@@ -739,7 +739,7 @@
         <div class="row" style="margin-top:12px">
           <button class="btn primary" id="finderBtn" type="button">Finn dropp</button>
         </div>
-        <div class="hint">Går kun gjennom sanger i kategorien som ikke har lagret dropp, én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger med lagret dropp hoppes over.</div>
+        <div class="hint">Går gjennom sangene i kategorien som ikke har manuelt satt dropp (også de med automatisk forslag), én og én. Trykk <b>D</b> når droppet kommer – tiden lagres (minus reaksjonstiden) og neste sang starter. <b>←/→</b> hopper 5 sek, <b>Shift+←/→</b> 1 sek. Sanger med manuelt dropp hoppes over.</div>
       </div>
 
       <form id="trackForm" autocomplete="off" novalidate class="section">
@@ -1124,7 +1124,8 @@
         durationMs: Number(o.durationMs) || 0,
         thumb: typeof o.thumb === 'string' ? o.thumb.slice(0, 300) : '',
         fileName: typeof o.fileName === 'string' ? o.fileName.slice(0, 200) : '',
-        dropMs: Number.isFinite(d) && d >= 0 ? Math.round(d) : 0
+        dropMs: Number.isFinite(d) && d >= 0 ? Math.round(d) : 0,
+        ...(o.dropSource === 'manual' || o.dropSource === 'auto' ? { dropSource: o.dropSource } : {})
       };
     }
     const tid = parseTrackId(o.spotifyUri || o.uri || o.url || o.link || o.trackId || '');
@@ -1138,7 +1139,8 @@
       tittel: String(o.tittel ?? o.title ?? 'Ukjent tittel').slice(0, 200),
       artist: String(o.artist ?? '').slice(0, 200),
       spotifyUri: 'spotify:track:' + tid,
-      dropMs: Math.round(dropMs)
+      dropMs: Math.round(dropMs),
+      ...(o.dropSource === 'manual' || o.dropSource === 'auto' ? { dropSource: o.dropSource } : {})
     };
   }
   function dedupeIds(list) {
@@ -1188,11 +1190,21 @@
     } else if (t.spotifyUri) keys.push('s:' + t.spotifyUri);
     return keys;
   }
+  /** Er droppet satt manuelt (Dropp-finner D/A eller redigering)? Automatiske forslag teller ikke. */
+  function isManualDrop(t) {
+    if (!(t.dropMs > 0)) return false;
+    if (t.dropSource) return t.dropSource === 'manual';
+    return t.source !== 'plex'; // eldre Spotify-sanger regnes som manuelle, eldre Plex-sanger som automatiske
+  }
   function rememberDrops() {
     let changed = false;
     tracks.forEach((t) => {
       if (!(t.dropMs > 0)) return;
-      dropKeys(t).forEach((k) => { if (dropMemory[k] !== t.dropMs) { dropMemory[k] = t.dropMs; changed = true; } });
+      const val = { ms: t.dropMs, manual: isManualDrop(t) };
+      dropKeys(t).forEach((k) => {
+        const cur = dropMemory[k];
+        if (!cur || cur.ms !== val.ms || cur.manual !== val.manual) { dropMemory[k] = val; changed = true; }
+      });
     });
     if (changed) store.set(LS.dropMemory, dropMemory);
   }
@@ -1201,11 +1213,16 @@
     if (t.dropMs > 0) return false;
     for (const k of dropKeys(t)) {
       const v = dropMemory[k];
-      if (Number.isFinite(v) && v > 0) { t.dropMs = v; return true; }
+      const ms = typeof v === 'number' ? v : v && v.ms;
+      if (Number.isFinite(ms) && ms > 0) {
+        t.dropMs = ms;
+        t.dropSource = (v && typeof v === 'object' && v.manual) || (typeof v === 'number' && k.startsWith('s:')) ? 'manual' : 'auto';
+        return true;
+      }
     }
     // Samme sang finnes kanskje allerede i en annen kategori med dropp
     const twin = tracks.find((x) => x !== t && x.dropMs > 0 && dropKeys(x).some((k) => dropKeys(t).includes(k)));
-    if (twin) { t.dropMs = twin.dropMs; return true; }
+    if (twin) { t.dropMs = twin.dropMs; t.dropSource = isManualDrop(twin) ? 'manual' : 'auto'; return true; }
     return false;
   }
   function saveTracks() { store.set(LS.tracks, tracks); rememberDrops(); }
@@ -2416,7 +2433,7 @@
     let ok = 0, failed = 0;
     for (const t of list) {
       btn.textContent = `Analyserer ${ok + failed + 1} av ${list.length} …`;
-      try { t.dropMs = await suggestDrop(t); ok++; saveTracks(); } catch { failed++; }
+      try { t.dropMs = await suggestDrop(t); t.dropSource = 'auto'; ok++; saveTracks(); } catch { failed++; }
     }
     renderAll();
     btn.disabled = false; btn.textContent = 'Foreslå dropp automatisk';
@@ -3032,7 +3049,9 @@
       const aa = document.createElement('div'); aa.className = 'a'; aa.textContent = t.artist || '—';
       info.append(tt, aa);
       if (invalidIds.has(t.id)) { const w = document.createElement('div'); w.className = 'warn'; w.textContent = invalidIds.get(t.id); info.appendChild(w); }
-      const d = document.createElement('div'); d.className = 'd'; d.textContent = fmtMs(t.dropMs, true); d.title = (t.dropMs / 1000).toFixed(1) + ' sek';
+      const d = document.createElement('div'); d.className = 'd'; d.textContent = fmtMs(t.dropMs, true) + (t.dropMs > 0 && !isManualDrop(t) ? ' auto' : '');
+      d.title = (t.dropMs / 1000).toFixed(1) + ' sek' + (t.dropMs > 0 ? (isManualDrop(t) ? ' · satt manuelt' : ' · automatisk forslag – ikke bekreftet') : '');
+      if (t.dropMs > 0 && !isManualDrop(t)) d.style.opacity = '.6';
       const acts = document.createElement('div'); acts.className = 'acts';
       acts.append(
         mkBtn('Test dropp', 'btn sm', () => { unlockAudio(); playTrack(t, 'test'); }),
@@ -3156,7 +3175,9 @@
     if (cur && cur.source === 'plex') {
       if (!Number.isFinite(f.secs) || f.secs < 0) { notify('Starttiden må være et tall i sekunder, f.eks. 48.5', 'error', { key: 'form' }); return; }
       if (cur.kategori !== f.kategori) removeFromPlayed(cur.id);
-      Object.assign(cur, { tittel: f.tittel || cur.tittel, artist: f.artist, kategori: f.kategori, dropMs: Math.round(f.secs * 1000) });
+      const newMs = Math.round(f.secs * 1000);
+      if (newMs !== cur.dropMs) cur.dropSource = newMs > 0 ? 'manual' : undefined;
+      Object.assign(cur, { tittel: f.tittel || cur.tittel, artist: f.artist, kategori: f.kategori, dropMs: newMs });
       notify(`«${cur.tittel}» er oppdatert.`, 'success');
       adminCat = cur.kategori;
       saveTracks(); savePlayed(); resetForm(); renderAll();
@@ -3171,7 +3192,8 @@
       tittel: f.tittel || 'Ukjent tittel',
       artist: f.artist,
       spotifyUri: 'spotify:track:' + f.tid,
-      dropMs: Math.round(f.secs * 1000)
+      dropMs: Math.round(f.secs * 1000),
+      dropSource: f.secs > 0 ? 'manual' : undefined
     };
     if (editingId) {
       const idx = tracks.findIndex((t) => t.id === editingId);
@@ -3270,8 +3292,8 @@
       eksportert: new Date().toISOString(),
       innstillinger: settings,
       tracks: tracks.map((t) => t.source === 'plex'
-        ? { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, fileName: t.fileName, dropMs: t.dropMs }
-        : { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, spotifyUri: t.spotifyUri, dropMs: t.dropMs })
+        ? { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, source: 'plex', plexKey: t.plexKey, partKey: t.partKey, durationMs: t.durationMs, thumb: t.thumb, fileName: t.fileName, dropMs: t.dropMs, dropSource: t.dropSource }
+        : { id: t.id, kategori: t.kategori, tittel: t.tittel, artist: t.artist, spotifyUri: t.spotifyUri, dropMs: t.dropMs, dropSource: t.dropSource })
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -3344,10 +3366,10 @@
     }
     const cat = adminCat;
     // Dropp-finneren går kun gjennom sanger som ikke har lagret dropp
-    const list = tracksIn(cat).filter((t) => !(t.dropMs > 0));
+    const list = tracksIn(cat).filter((t) => !isManualDrop(t));
     if (!list.length) {
       notify(tracksIn(cat).length
-        ? `Alle sangene i «${CATS[cat].navn}» har allerede lagret dropp. Vil du endre en, trykk «Rediger» på sangen i listen og bruk «Test dropp».`
+        ? `Alle sangene i «${CATS[cat].navn}» har manuelt satt dropp. Vil du endre en, trykk «Rediger» på sangen i listen og bruk «Test dropp».`
         : `Ingen sanger i «${CATS[cat].navn}».`, 'info', { key: 'finder' });
       return;
     }
@@ -3430,6 +3452,7 @@
     if (pos === null) { notify('Ingenting spilles akkurat nå – vent til sangen har startet.', 'warn', { key: 'finder' }); return; }
     const ms = Math.max(0, Math.round((pos - settings.finder.reaksjonSek * 1000) / 100) * 100);
     t.dropMs = ms;
+    t.dropSource = 'manual';
     saveTracks();
     finder.saved++;
     renderAll();
@@ -3460,6 +3483,7 @@
     const t = finderTrack();
     if (!t || finder.suggestion == null) return;
     t.dropMs = finder.suggestion;
+    t.dropSource = 'manual';
     saveTracks();
     finder.saved++;
     renderAll();
