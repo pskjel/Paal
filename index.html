@@ -445,6 +445,7 @@
     .gb-keys, .catbtn kbd, #fadeBtn kbd, #killBtn kbd, footer.app-only { display: none !important; }
   }
 
+  .sync-box .btn { flex: none; }
   /* Offentlig visning: bare spilleren */
   body.public .admin-ui { display: none !important; }
 
@@ -647,6 +648,14 @@
         <label for="volume">Hovedvolum</label>
         <input type="range" id="volume" min="0" max="100" step="1" value="100">
         <b id="volumeVal">100 %</b>
+      </div>
+      <div class="vol plex-only sync-box">
+        <div style="flex:1 1 220px;min-width:0">
+          <label>Lagre på enheten</label>
+          <div class="hint" id="syncHint" style="margin-top:4px">Last ned sangene, så virker musikken også uten nett.</div>
+        </div>
+        <button class="btn sm primary" id="syncBtn" type="button">Last ned sangene</button>
+        <button class="btn sm ghost" id="syncClearBtn" type="button" hidden>Slett</button>
       </div>
     </div>
 
@@ -916,7 +925,7 @@
         <ul>
           <li>sanglister, starttider, innstillinger og hvilke sanger som er spilt i runden</li>
           <li>innloggingsnøkler for Spotify eller Plex, hvis du kobler til dem</li>
-          <li>lydfiler som lagres med «Gjør klar til kamp»</li>
+          <li>lydfiler du laster ned til enheten med «Last ned sangene»</li>
           <li>tidspunktet du godtok vilkårene</li>
         </ul>
         <h4>4. Tjenester appen bruker</h4>
@@ -983,7 +992,7 @@
   const OWNER_NAME = '[KLUBBENS NAVN]';
   const OWNER_EMAIL = '[KONTAKT-E-POST]';
   const TERMS_VERSION = '2026-11-23';
-  const APP_VERSION = '2026-11-23.5';
+  const APP_VERSION = '2026-11-23.6';
   // Admin-innlogging (passordet lagres kun som saltet PBKDF2-hash)
   const ADMIN_USER = 'pskjel';
   const ADMIN_SALT = 'edcdeea86baf99047079536a52e02a0b';
@@ -2361,11 +2370,15 @@
   }
 
   async function playLocal(track, mode) {
-    if (!plexReady()) {
+    let cachedUrl = null;
+    try { cachedUrl = await audioCacheUrl(track); } catch { cachedUrl = null; }
+    if (!cachedUrl && !plexReady()) {
       const ok = plexToken() ? await plexConnect(false) : false;
       if (!ok) {
-        notify('Musikkbiblioteket (Plex) er ikke tilkoblet på denne enheten. Administrator må koble det til via kampdj.no/#admin.', 'error', { key: 'play' });
-        openSetup();
+        notify(plexToken()
+          ? 'Musikkserveren svarer ikke, og sangen er ikke lastet ned på denne enheten. Sjekk at PC-en med Plex er på og har nett.'
+          : 'Musikkbiblioteket (Plex) er ikke tilkoblet på denne enheten. Administrator må koble det til via kampdj.no/#admin.', 'error', { key: 'play' });
+        if (isAdmin) openSetup();
         return false;
       }
     }
@@ -2373,10 +2386,8 @@
     local.seq++;
     volFactor = (settings.vol[track.kategori] ?? 100) / 100;
     localUnlock();
-    let url = null;
-    // Lagrede filer finnes bare hos admin; besøkende strømmer alltid (og slipper ekstra venting før avspilling)
-    if (isAdmin) { try { url = await audioCacheUrl(track); } catch { url = null; } }
-    if (!url) url = plexStreamUrl(track);
+    // Nedlastet sang brukes først; ellers strømmes den fra Plex
+    const url = cachedUrl || plexStreamUrl(track);
     local.track = track;
     const startSec = Math.max(0, (track.dropMs || 0) / 1000);
     const tryPlay = (el) => new Promise((resolve, reject) => {
@@ -2424,7 +2435,7 @@
 
   /* ---------- Kampklar: lagre lydfiler på enheten (Cache Storage) ---------- */
   const AUDIO_CACHE = 'kampdj-audio-v1';
-  const cacheKey = (t) => `https://kampdj.cache/plex/${encodeURIComponent((plex.server && plex.server.id) || 'server')}/${encodeURIComponent(t.plexKey)}`;
+  const cacheKey = (t) => `https://kampdj.cache/plex/track/${encodeURIComponent(t.plexKey)}`;
   async function audioCacheUrl(t) {
     if (!('caches' in window)) return null;
     const memo = local.urls.get(t.plexKey);
@@ -2452,17 +2463,28 @@
     return new Set((await c.keys()).map((r) => r.url));
   }
   async function updatePrepHint() {
-    const h = $('prepHint');
-    if (!h) return;
+    const hints = [$('prepHint'), $('syncHint')].filter(Boolean);
+    if (!hints.length) return;
+    const set = (txt, ok) => hints.forEach((h) => { h.textContent = txt; h.className = 'hint' + (ok ? ' ok' : ''); });
     const list = tracks.filter((t) => t.source === 'plex');
-    if (!list.length) { h.textContent = 'Ingen Plex-sanger i listene ennå.'; return; }
-    if (!('caches' in window)) { h.textContent = 'Denne nettleseren kan ikke lagre lydfiler lokalt.'; return; }
+    const uniq = [...new Map(list.map((t) => [t.plexKey, t])).values()];
+    if (!uniq.length) { set('Ingen sanger å laste ned ennå.'); $('syncClearBtn').hidden = true; return; }
+    if (!('caches' in window)) { set('Denne nettleseren kan ikke lagre lydfiler lokalt.'); return; }
     const keys = await cachedKeys();
-    const n = list.filter((t) => keys.has(new Request(cacheKey(t)).url)).length;
+    const n = uniq.filter((t) => keys.has(new Request(cacheKey(t)).url)).length;
     let extra = '';
-    try { const est = await navigator.storage.estimate(); if (est && est.usage) extra = ` · bruker ca. ${Math.round(est.usage / 1e6)} MB`; } catch { /* ignorer */ }
-    h.textContent = `${n} av ${list.length} sanger lagret på denne enheten${extra}.` + (n < list.length ? ' Trykk «Gjør klar til kamp» før kampen.' : ' Klar for kamp – virker også uten nett.');
-    h.className = 'hint' + (n === list.length ? ' ok' : '');
+    try { const est = await navigator.storage.estimate(); if (est && est.usage) extra = ` · ca. ${Math.round(est.usage / 1e6)} MB`; } catch { /* ignorer */ }
+    set(`${n} av ${uniq.length} sanger lagret på denne enheten${extra}.` + (n < uniq.length ? ' Last ned før kampen, så virker musikken også uten nett.' : ' Klar for kamp – virker også uten nett.'), n === uniq.length);
+    $('syncClearBtn').hidden = n === 0;
+    $('syncBtn').textContent = n === uniq.length ? 'Oppdater' : n ? 'Last ned resten' : 'Last ned sangene';
+  }
+  async function clearDeviceSongs() {
+    if (!confirm('Slette alle nedlastede sanger fra denne enheten? Musikken strømmes da fra Plex igjen.')) return;
+    try { if ('caches' in window) await caches.delete(AUDIO_CACHE); } catch { /* ignorer */ }
+    local.urls.forEach((u) => { try { URL.revokeObjectURL(u); } catch { /* ignorer */ } });
+    local.urls.clear();
+    updatePrepHint();
+    notify('Nedlastede sanger er slettet fra enheten.', 'info', { key: 'prep' });
   }
   let prepping = false;
   async function prepareForMatch() {
@@ -2470,12 +2492,15 @@
     if (!plexReady() && !(await plexConnect(false))) return;
     if (!('caches' in window)) { notify('Denne nettleseren kan ikke lagre lydfiler lokalt.', 'error', { key: 'prep' }); return; }
     prepping = true;
-    const btn = $('prepBtn');
-    btn.disabled = true;
+    const btns = [$('prepBtn'), $('syncBtn')].filter(Boolean);
+    const label = (txt) => btns.forEach((b) => { b.textContent = txt; });
+    btns.forEach((b) => { b.disabled = true; });
     try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch { /* valgfritt */ }
     const c = await caches.open(AUDIO_CACHE);
     const keys = await cachedKeys();
-    const todo = tracks.filter((t) => t.source === 'plex' && !keys.has(new Request(cacheKey(t)).url));
+    const todo = [...new Map(tracks.filter((t) => t.source === 'plex').map((t) => [t.plexKey, t])).values()]
+      .filter((t) => !keys.has(new Request(cacheKey(t)).url));
+    const total = todo.length;
     let done = 0, failed = 0;
     const worker = async () => {
       while (todo.length) {
@@ -2486,14 +2511,15 @@
           await c.put(cacheKey(t), res);
           done++;
         } catch { failed++; }
-        btn.textContent = `Lagrer … ${done + failed}`;
+        label(`Laster ned ${done + failed} av ${total} …`);
       }
     };
     await Promise.all([worker(), worker()]);
-    btn.disabled = false; btn.textContent = 'Gjør klar til kamp';
+    btns.forEach((b) => { b.disabled = false; });
+    $('prepBtn').textContent = 'Gjør klar til kamp';
     prepping = false;
     updatePrepHint();
-    notify(failed ? `Lagret ${done} sanger, ${failed} feilet. Prøv igjen når Plex-serveren svarer.` : `Ferdig – ${done} nye sanger lagret på enheten.`, failed ? 'warn' : 'success', { key: 'prep', timeout: 8000 });
+    notify(failed ? `Lastet ned ${done} sanger, ${failed} feilet. Prøv igjen når Plex-serveren svarer.` : total ? `Ferdig – ${done} sanger lagret på enheten. Musikken virker nå også uten nett.` : 'Alle sangene er allerede lagret på enheten.', failed ? 'warn' : 'success', { key: 'prep', timeout: 8000 });
   }
 
   /* ---------- Automatisk dropp-forslag (analyse av lyden) ---------- */
@@ -3928,6 +3954,8 @@
     $('plexPlBtn').addEventListener('click', importPlexPlaylist);
     $('plexPlRefresh').addEventListener('click', () => loadPlexPlaylists(false));
     $('prepBtn').addEventListener('click', prepareForMatch);
+    $('syncBtn').addEventListener('click', prepareForMatch);
+    $('syncClearBtn').addEventListener('click', clearDeviceSongs);
     $('autoDropBtn').addEventListener('click', autoDropAll);
     $('fnAccept').addEventListener('click', finderAccept);
     $('fnDelete').addEventListener('click', finderDelete);
@@ -4174,6 +4202,7 @@
       const data = await loadFixedList();
       if (data) applyFixedList(data);
       else { tracks = []; renderAll(); notify('Ingen sanger er publisert ennå.', 'info', { key: 'fixed', timeout: 0 }); }
+      updatePrepHint();
       if (plexToken()) {
         const ok = await plexConnect(true);
         if (!ok) notify('Musikkserveren er ikke tilgjengelig akkurat nå. Prøv igjen om litt.', 'error', { key: 'plex' });
